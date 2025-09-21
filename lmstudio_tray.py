@@ -14,7 +14,7 @@ MODEL = sys.argv[1] if len(sys.argv) > 1 else "kein-modell-übergeben"
 # === GTK-Iconnamen aus dem Icon Browser ===
 ICON_OK = "emblem-default"         # ✅ Modell aktiv
 ICON_FAIL = "emblem-unreadable"    # ❌ Modell nicht geladen
-ICON_WARN = "dialog-warning"  # ⚠️ Fehlerstatus
+ICON_WARN = "dialog-warning"       # ⚠️ Fehlerstatus
 
 # === Pfad zur lms-CLI ===
 LMS_CLI = "/home/robby/.lmstudio/bin/lms"

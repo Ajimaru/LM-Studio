@@ -20,11 +20,12 @@ mit GPU-Fallback und startet den Tray-Monitor. Die Logdatei wird pro Lauf neu er
 Optionen:
     -d, --debug       Debug-Ausgabe und Bash-Trace aktivieren (auch Terminalausgabe)
     -h, --help        Diese Hilfe anzeigen und beenden
-    -L, --list-models Lokale Modelle auflisten; bei TTY: interaktive Auswahl (kein LM Studio Start vor Auswahl)
+    -L, --list-models Lokale Modelle auflisten; bei TTY: interaktive Auswahl mit 30s Auto-Skip (kein LM Studio Start vor Auswahl)
     -m, --model NAME  Angegebenes Modell laden (wenn NAME fehlt, wird kein Modell geladen)
 
 Umgebungsvariablen:
-    LM_AUTOSTART_DEBUG=1   Debug-Modus erzwingen (entspricht --debug)
+    LM_AUTOSTART_DEBUG=1            Debug-Modus erzwingen (entspricht --debug)
+    LM_AUTOSTART_SELECT_TIMEOUT=30  Timeout (Sekunden) für interaktive -L Auswahl; nach Ablauf wird automatisch "Skip" gewählt
 
 Exit-Codes:
     0  Erfolg
@@ -100,6 +101,7 @@ DEBUG_FLAG=0
 MODEL=""
 LIST_MODELS=0
 MODEL_EXPLICIT=0
+SELECT_TIMEOUT="${LM_AUTOSTART_SELECT_TIMEOUT:-30}"
 while [ $# -gt 0 ]; do
     case "$1" in
         --debug|-d)
@@ -130,6 +132,22 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+countdown_prompt() {
+    local timeout="$1"; shift
+    local prompt="$*"
+    local t pid
+    t="$timeout"
+    {
+        while [ "$t" -gt 0 ]; do
+            printf "\r%s (Auto-Skip in %2ds) " "$prompt" "$t"
+            sleep 1
+            t=$((t-1))
+        done
+        printf "\r%s (Auto-Skip in  0s) " "$prompt"
+    } >&2 &
+    echo $!
+}
+
 if [ "$LIST_MODELS" = "1" ]; then
     if [ -t 0 ]; then
         echo "Suche lokale Modelle ..."
@@ -151,7 +169,17 @@ if [ "$LIST_MODELS" = "1" ]; then
         if [ ${#MAPFILE_ARR[@]} -eq 0 ]; then
             echo "Keine lokalen Modelle gefunden." >&2
             while true; do
-                read -r -p "[S]kip ohne Modell, [Q]uit beenden: " ans
+                cd_pid=$(countdown_prompt "$SELECT_TIMEOUT" "[S]kip ohne Modell, [Q]uit beenden:")
+                if read -r -t "$SELECT_TIMEOUT" ans < /dev/tty; then
+                    kill "$cd_pid" 2>/dev/null || true; wait "$cd_pid" 2>/dev/null || true; echo; echo >&2
+                    if [ "$DEBUG_FLAG" = "1" ] || [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
+                        echo "[DEBUG] Eingabe erkannt (no-models): '$ans'"
+                    fi
+                else
+                    kill "$cd_pid" 2>/dev/null || true; wait "$cd_pid" 2>/dev/null || true; echo; echo >&2
+                    ans="s"
+                    echo "Automatische Auswahl: Skip (Timeout ${SELECT_TIMEOUT}s)."
+                fi
                 case "${ans,,}" in
                     s|skip)
                         echo "Kein Modell wird geladen."
@@ -173,18 +201,30 @@ if [ "$LIST_MODELS" = "1" ]; then
 
             attempts=0
             while true; do
-                read -r -p "Auswahl [1-${#MAPFILE_ARR[@]}|s|q]: " pick
+                cd_pid=$(countdown_prompt "$SELECT_TIMEOUT" "Auswahl [1-${#MAPFILE_ARR[@]}|s|q]:")
+                if read -r -t "$SELECT_TIMEOUT" pick < /dev/tty; then
+                    kill "$cd_pid" 2>/dev/null || true; wait "$cd_pid" 2>/dev/null || true; echo; echo >&2
+                    if [ "$DEBUG_FLAG" = "1" ] || [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
+                        echo "[DEBUG] Eingabe erkannt (models): '$pick'"
+                    fi
+                else
+                    kill "$cd_pid" 2>/dev/null || true; wait "$cd_pid" 2>/dev/null || true; echo; echo >&2
+                    pick="s"
+                    echo "Automatische Auswahl: Skip (Timeout ${SELECT_TIMEOUT}s)."
+                fi
                 if [[ "${pick,,}" == "q" ]]; then echo "Beendet."; exit 0; fi
                 if [[ "${pick,,}" == "s" ]]; then echo "Kein Modell wird geladen."; break; fi
                 if [[ "$pick" =~ ^[0-9]+$ ]] && [ "$pick" -ge 1 ] && [ "$pick" -le ${#MAPFILE_ARR[@]} ]; then
                     CHOSEN="${MAPFILE_ARR[$((pick-1))]}"
                     echo "Ausgewählt: $CHOSEN"
                     if [ "$MODEL_EXPLICIT" -eq 0 ]; then
-                        base_name="$(basename "$CHOSEN")"
-                        parent_dir="$(basename "$(dirname "$CHOSEN")")"
-                        grand_dir="$(basename "$(dirname "$(dirname "$CHOSEN")")")"
-                        maybe_id="$grand_dir/$parent_dir/$base_name"
-                        MODEL="$maybe_id"
+                        MODEL="$CHOSEN"
+                        if [ "$DEBUG_FLAG" = "1" ] || [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
+                            base_name="$(basename "$CHOSEN")";
+                            parent_dir="$(basename "$(dirname "$CHOSEN")")";
+                            grand_dir="$(basename "$(dirname "$(dirname "$CHOSEN")")")";
+                            echo "[DEBUG] Auswahl-Datei: $CHOSEN (id-Kandidat: $grand_dir/$parent_dir/$base_name)"
+                        fi
                     else
                         echo "Hinweis: --model wurde bereits gesetzt und hat Vorrang; Auswahl wird ignoriert." >&2
                     fi
@@ -238,24 +278,97 @@ resolve_model_arg() {
     if [ -f "$input" ] && [ -x "$lmscmd" ]; then
         local base
         base="$(basename "$input")"
-        local out rc id
+        local out rc
         set +e
-        out="$($lmscmd models list 2>/dev/null)"; rc=$?
-        if [ $rc -ne 0 ] || [ -z "$out" ]; then
-            out="$($lmscmd list 2>/dev/null)"; rc=$?
-        fi
+        out="$($lmscmd ls 2>/dev/null)"; rc=$?
         set -e
         if [ $rc -eq 0 ] && [ -n "$out" ]; then
-            id="$(printf '%s\n' "$out" | grep -F "$base" | head -n 1 | sed -E 's/[[:space:]]*\([^\)]*\)[[:space:]]*$//' | sed -E 's/^[[:space:]]+//')"
-            if [ -n "$id" ]; then
-                printf '%s\n' "$id"
-                return 0
+            local line id
+            line="$(printf '%s\n' "$out" | grep -F "$base" | head -n 1)"
+            if [ -n "$line" ]; then
+                id="$(printf '%s\n' "$line" | sed -E 's/[[:space:]]*\([^\)]*\)[[:space:]]*$//' | sed -E 's/^[[:space:]]+//' | awk '{print $1}')"
+                if [ -n "$id" ]; then
+                    printf '%s\n' "$id"; return 0
+                fi
+            fi
+            local base_noext
+            base_noext="${base%.gguf}"; base_noext="${base_noext%.bin}"; base_noext="${base_noext%.safetensors}"
+            local match
+            match="$(printf '%s\n' "$out" | awk '{print $1}' | grep -i "$base_noext" | head -n 1)"
+            if [ -n "$match" ]; then
+                printf '%s\n' "$match"; return 0
             fi
         fi
-        printf '%s\n' "$input"
-        return 0
+        printf '%s\n' "$input"; return 0
     fi
     printf '%s\n' "$input"
+}
+
+ensure_model_registered() {
+    local path="$1"; local lmscmd="$2"
+    [ -f "$path" ] || { printf '%s\n' "$path"; return 0; }
+    local base out line id rc
+    base="$(basename "$path")"
+    set +e
+    out="$($lmscmd ls 2>/dev/null)"; rc=$?
+    set -e
+    if [ $rc -eq 0 ] && [ -n "$out" ]; then
+        line="$(printf '%s\n' "$out" | grep -F "$base" | head -n 1)"
+        if [ -n "$line" ]; then
+            id="$(printf '%s\n' "$line" | sed -E 's/[[:space:]]*\([^\)]*\)[[:space:]]*$//' | sed -E 's/^[[:space:]]+//' | awk '{print $1}')"
+            if [ -n "$id" ]; then printf '%s\n' "$id"; return 0; fi
+        fi
+        local best_id="" best_score=0 candidate
+        local tokens token base_lc
+        base_lc="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
+        base_lc="${base_lc%.gguf}"; base_lc="${base_lc%.bin}"; base_lc="${base_lc%.safetensors}"
+        base_lc="$(printf '%s' "$base_lc" | sed 's/[_.-]/ /g')"
+        read -r -a tokens <<<"$base_lc"
+        for candidate in $(printf '%s\n' "$out" | awk '{print $1}' | grep -E '^[A-Za-z0-9_./-]+$' | sed 's/\x1b\[[0-9;]*m//g'); do
+            local cand_lc score=0 t
+            cand_lc="$(printf '%s' "$candidate" | tr '[:upper:]' '[:lower:]')"
+            for t in "${tokens[@]}"; do
+                case "$t" in
+                    "q4"|"q5"|"q6"|"q8"|"k"|"m"|"gguf"|"q4_k_m"|"q8_0"|"q4_0"|"q5_1"|"q2_k"|"q3_k") continue ;; # ignoriere häufige Quantisierungs-Tokens
+                esac
+                if [ -n "$t" ] && printf '%s' "$cand_lc" | grep -q "$t"; then
+                    score=$((score+1))
+                fi
+            done
+            if [ $score -gt $best_score ]; then
+                best_score=$score; best_id="$candidate"
+            fi
+        done
+        if [ -n "$best_id" ] && [ $best_score -ge 2 ]; then
+            printf '%s\n' "$best_id"; return 0
+        fi
+    fi
+    if [ "$DEBUG_FLAG" = "1" ] || [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
+        echo "[DEBUG] Importiere Modell-Datei in LM Studio: $path" >&2
+    fi
+    if printf 'y\n' | "$lmscmd" import --symbolic-link "$path" >/dev/null 2>&1; then
+        sleep 1
+        set +e
+        out="$($lmscmd ls 2>/dev/null)"; rc=$?
+        set -e
+        if [ $rc -eq 0 ] && [ -n "$out" ]; then
+            line="$(printf '%s\n' "$out" | grep -F "$base" | head -n 1)"
+            if [ -n "$line" ]; then
+                id="$(printf '%s\n' "$line" | sed -E 's/[[:space:]]*\([^\)]*\)[[:space:]]*$//' | sed -E 's/^[[:space:]]+//' | awk '{print $1}')"
+                if [ -n "$id" ]; then printf '%s\n' "$id"; return 0; fi
+            fi
+            local base_noext2
+            base_noext2="${base%.gguf}"; base_noext2="${base_noext2%.bin}"; base_noext2="${base_noext2%.safetensors}"
+            local match2
+            match2="$(printf '%s\n' "$out" | awk '{print $1}' | grep -i "$base_noext2" | head -n 1)"
+            if [ -n "$match2" ]; then
+                printf '%s\n' "$match2"; return 0
+            fi
+        fi
+    else
+        echo "[WARN] Import schlug fehl für: $path" >&2
+    fi
+    printf '%s\n' "$path"
 }
 
 SESSION_TYPE="${XDG_SESSION_TYPE:-}"
@@ -314,21 +427,38 @@ fi
 API_PORT="${API_PORT:-1234}"
 API_WAIT="${API_WAIT:-30}"
 if have curl; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') 🌐 Warte auf LM Studio API (127.0.0.1:$API_PORT, bis zu ${API_WAIT}s)..."
+    try_ports=("$API_PORT")
+    if [ "$API_PORT" = "1234" ]; then
+        try_ports+=("41343")
+    fi
+    echo "$(date '+%Y-%m-%d %H:%M:%S') 🌐 Warte auf LM Studio API (Ports: ${try_ports[*]}, bis zu ${API_WAIT}s)..."
     successes=0
     waited=0
+    active_port=""
     while [ "$waited" -lt "$API_WAIT" ]; do
-        if curl -sS --max-time 1 "http://127.0.0.1:$API_PORT/" >/dev/null 2>&1; then
-            successes=$((successes+1))
-            if [ "$successes" -ge 2 ]; then
-                echo "$(date '+%Y-%m-%d %H:%M:%S') ✅ API erreichbar."
+        for p in "${try_ports[@]}"; do
+            if curl -sS --max-time 1 "http://127.0.0.1:$p/" >/dev/null 2>&1; then
+                active_port="$p"
+                successes=$((successes+1))
                 break
             fi
-        else
             successes=0
+        done
+        if [ "$successes" -ge 2 ]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') ✅ API erreichbar auf Port $active_port."
+            break
         fi
         sleep 1
         waited=$((waited+1))
+        if [ -f "$HTTP_CFG" ]; then
+            new_port=$(grep -oE '"port"\s*:\s*[0-9]+' "$HTTP_CFG" | grep -oE '[0-9]+' | head -n 1)
+            if [ -n "$new_port" ] && [ "$new_port" != "$API_PORT" ]; then
+                API_PORT="$new_port"
+                try_ports=("$API_PORT")
+                if [ "$API_PORT" = "1234" ]; then try_ports+=("41343"); fi
+                echo "[DEBUG] Aktualisierte API-Port-Erkennung: $API_PORT"
+            fi
+        fi
     done
     if [ "$successes" -lt 2 ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') ⚠️ API nicht stabil erreichbar – versuche trotzdem das Laden."
@@ -354,9 +484,18 @@ if [ -n "$MODEL" ]; then
         MODEL="fehler-modell"
     else
         echo "$(date '+%Y-%m-%d %H:%M:%S') 🔧 Verwende lms-CLI: $LMS_CMD"
+        if ! "$LMS_CMD" ps </dev/null >/dev/null 2>&1; then
+            sleep 1
+            "$LMS_CMD" ps </dev/null >/dev/null 2>&1 || true
+        fi
         ATTEMPT=1
         LOAD_OK=false
-        RESOLVED_MODEL="$(resolve_model_arg "$MODEL" "$LMS_CMD")"
+        if [ -f "$MODEL" ]; then
+            RESOLVED_MODEL="$(ensure_model_registered "$MODEL" "$LMS_CMD")"
+        else
+            RESOLVED_MODEL="$(resolve_model_arg "$MODEL" "$LMS_CMD")"
+        fi
+        RESOLVED_MODEL="$(printf '%s' "$RESOLVED_MODEL" | head -n 1 | sed 's/^\s\+//; s/\s\+$//')"
         while [ "$ATTEMPT" -le "$LMS_RETRIES" ]; do
             echo "$(date '+%Y-%m-%d %H:%M:%S') ▶️ Lade-Versuch $ATTEMPT/$LMS_RETRIES: '$MODEL' mit GPU=$GPU"
             if "$LMS_CMD" load "$RESOLVED_MODEL" --gpu="$GPU" </dev/null; then

@@ -20,7 +20,7 @@ mit GPU-Fallback und startet den Tray-Monitor. Die Logdatei wird pro Lauf neu er
 Optionen:
     -d, --debug       Debug-Ausgabe und Bash-Trace aktivieren (auch Terminalausgabe)
     -h, --help        Diese Hilfe anzeigen und beenden
-    -L, --list-models Lokale Modelle auflisten (kein LM Studio Start)
+    -L, --list-models Lokale Modelle auflisten; bei TTY: interaktive Auswahl (kein LM Studio Start vor Auswahl)
     -m, --model NAME  Angegebenes Modell laden (wenn NAME fehlt, wird kein Modell geladen)
 
 Umgebungsvariablen:
@@ -37,6 +37,7 @@ Beispiele:
     $(basename "$0") --model qwen2.5:7b-instruct
     $(basename "$0") -m qwen2.5:7b-instruct
     $(basename "$0") -m   # Flag ohne Namen: lädt kein Modell, Rest läuft normal
+    $(basename "$0") -L   # Interaktive Modellauswahl (bei TTY) oder reine Liste (ohne TTY)
 EOF
 }
 
@@ -98,6 +99,7 @@ list_models() {
 DEBUG_FLAG=0
 MODEL=""
 LIST_MODELS=0
+MODEL_EXPLICIT=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --debug|-d)
@@ -110,7 +112,7 @@ while [ $# -gt 0 ]; do
             if [ -n "${2:-}" ] && [ "${2#-}" != "$2" ]; then
                 shift
             elif [ -n "${2:-}" ]; then
-                MODEL="$2"; shift 2
+                MODEL="$2"; MODEL_EXPLICIT=1; shift 2
             else
                 shift
             fi ;;
@@ -129,8 +131,76 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$LIST_MODELS" = "1" ]; then
-    list_models
-    exit $?
+    if [ -t 0 ]; then
+        echo "Suche lokale Modelle ..."
+        MODEL_DIRS=(
+            "$HOME/.cache/lm-studio"
+            "$HOME/.cache/LM-Studio"
+            "$HOME/.lmstudio/models"
+            "$HOME/LM Studio/models"
+            "$SCRIPT_DIR/models"
+        )
+        MAPFILE_ARR=()
+        for d in "${MODEL_DIRS[@]}"; do
+            [ -d "$d" ] || continue
+            while IFS= read -r f; do
+                MAPFILE_ARR+=("$f")
+            done < <(find "$d" -maxdepth 6 -type f \( -iname "*.gguf" -o -iname "*.bin" -o -iname "*.safetensors" \) 2>/dev/null)
+        done
+
+        if [ ${#MAPFILE_ARR[@]} -eq 0 ]; then
+            echo "Keine lokalen Modelle gefunden." >&2
+            while true; do
+                read -r -p "[S]kip ohne Modell, [Q]uit beenden: " ans
+                case "${ans,,}" in
+                    s|skip)
+                        echo "Kein Modell wird geladen."
+                        break ;;
+                    q|quit)
+                        echo "Beendet."; exit 0 ;;
+                    *)
+                        echo "Ungültige Eingabe." ;;
+                esac
+            done
+        else
+            echo "Gefundene Modelle:";
+            i=1
+            for f in "${MAPFILE_ARR[@]}"; do
+                echo "  $i) $(basename "$f")"; i=$((i+1))
+            done
+            echo "  s) Skip (kein Modell laden)"
+            echo "  q) Quit (Skript beenden)"
+
+            attempts=0
+            while true; do
+                read -r -p "Auswahl [1-${#MAPFILE_ARR[@]}|s|q]: " pick
+                if [[ "${pick,,}" == "q" ]]; then echo "Beendet."; exit 0; fi
+                if [[ "${pick,,}" == "s" ]]; then echo "Kein Modell wird geladen."; break; fi
+                if [[ "$pick" =~ ^[0-9]+$ ]] && [ "$pick" -ge 1 ] && [ "$pick" -le ${#MAPFILE_ARR[@]} ]; then
+                    CHOSEN="${MAPFILE_ARR[$((pick-1))]}"
+                    echo "Ausgewählt: $CHOSEN"
+                    if [ "$MODEL_EXPLICIT" -eq 0 ]; then
+                        base_name="$(basename "$CHOSEN")"
+                        parent_dir="$(basename "$(dirname "$CHOSEN")")"
+                        grand_dir="$(basename "$(dirname "$(dirname "$CHOSEN")")")"
+                        maybe_id="$grand_dir/$parent_dir/$base_name"
+                        MODEL="$maybe_id"
+                    else
+                        echo "Hinweis: --model wurde bereits gesetzt und hat Vorrang; Auswahl wird ignoriert." >&2
+                    fi
+                    break
+                fi
+                echo "Ungültige Eingabe."; attempts=$((attempts+1));
+                if [ $attempts -ge 5 ]; then
+                    echo "Zu viele ungültige Eingaben. Weiter ohne Modellauswahl."
+                    break
+                fi
+            done
+        fi
+    else
+        list_models
+        exit $?
+    fi
 fi
 
 if [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
@@ -162,6 +232,31 @@ export LMSTUDIO_DISABLE_AUTO_LAUNCH=true
 
 # === Abhängigkeiten prüfen (interaktiv vorschlagen) ===
 have() { command -v "$1" >/dev/null 2>&1; }
+
+resolve_model_arg() {
+    local input="$1"; local lmscmd="$2"
+    if [ -f "$input" ] && [ -x "$lmscmd" ]; then
+        local base
+        base="$(basename "$input")"
+        local out rc id
+        set +e
+        out="$($lmscmd models list 2>/dev/null)"; rc=$?
+        if [ $rc -ne 0 ] || [ -z "$out" ]; then
+            out="$($lmscmd list 2>/dev/null)"; rc=$?
+        fi
+        set -e
+        if [ $rc -eq 0 ] && [ -n "$out" ]; then
+            id="$(printf '%s\n' "$out" | grep -F "$base" | head -n 1 | sed -E 's/[[:space:]]*\([^\)]*\)[[:space:]]*$//' | sed -E 's/^[[:space:]]+//')"
+            if [ -n "$id" ]; then
+                printf '%s\n' "$id"
+                return 0
+            fi
+        fi
+        printf '%s\n' "$input"
+        return 0
+    fi
+    printf '%s\n' "$input"
+}
 
 SESSION_TYPE="${XDG_SESSION_TYPE:-}"
 IS_WAYLAND=false; [ "${SESSION_TYPE,,}" = "wayland" ] && IS_WAYLAND=true || true
@@ -210,6 +305,36 @@ fi
 echo "$(date '+%Y-%m-%d %H:%M:%S') ⏳ Warte 10 Sekunden, bis LM Studio bereit ist..."
 sleep 10
 
+# === API-Server-Warte-Logik: Warte bis HTTP-API erreichbar ist (stabil) ===
+HTTP_CFG="$HOME/.lmstudio/.internal/http-server-config.json"
+API_PORT=""
+if [ -f "$HTTP_CFG" ]; then
+    API_PORT=$(grep -oE '"port"\s*:\s*[0-9]+' "$HTTP_CFG" | grep -oE '[0-9]+' | head -n 1)
+fi
+API_PORT="${API_PORT:-1234}"
+API_WAIT="${API_WAIT:-30}"
+if have curl; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') 🌐 Warte auf LM Studio API (127.0.0.1:$API_PORT, bis zu ${API_WAIT}s)..."
+    successes=0
+    waited=0
+    while [ "$waited" -lt "$API_WAIT" ]; do
+        if curl -sS --max-time 1 "http://127.0.0.1:$API_PORT/" >/dev/null 2>&1; then
+            successes=$((successes+1))
+            if [ "$successes" -ge 2 ]; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') ✅ API erreichbar."
+                break
+            fi
+        else
+            successes=0
+        fi
+        sleep 1
+        waited=$((waited+1))
+    done
+    if [ "$successes" -lt 2 ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') ⚠️ API nicht stabil erreichbar – versuche trotzdem das Laden."
+    fi
+fi
+
 # === Modell laden, wenn übergeben ===
 if [ -n "$MODEL" ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') 📦 Lade Modell: $MODEL ..."
@@ -231,9 +356,10 @@ if [ -n "$MODEL" ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') 🔧 Verwende lms-CLI: $LMS_CMD"
         ATTEMPT=1
         LOAD_OK=false
+        RESOLVED_MODEL="$(resolve_model_arg "$MODEL" "$LMS_CMD")"
         while [ "$ATTEMPT" -le "$LMS_RETRIES" ]; do
             echo "$(date '+%Y-%m-%d %H:%M:%S') ▶️ Lade-Versuch $ATTEMPT/$LMS_RETRIES: '$MODEL' mit GPU=$GPU"
-            if "$LMS_CMD" load "$MODEL" --gpu="$GPU"; then
+            if "$LMS_CMD" load "$RESOLVED_MODEL" --gpu="$GPU" </dev/null; then
                 LOAD_OK=true; break
             fi
             sleep "$LMS_RETRY_SLEEP"; ATTEMPT=$((ATTEMPT + 1))
@@ -241,7 +367,7 @@ if [ -n "$MODEL" ]; then
 
         if ! $LOAD_OK; then
             echo "$(date '+%Y-%m-%d %H:%M:%S') ⚠️ Laden mit GPU=$GPU fehlgeschlagen – versuche CPU-Fallback (GPU=0.0)."
-            if "$LMS_CMD" load "$MODEL" --gpu="0.0"; then
+            if "$LMS_CMD" load "$RESOLVED_MODEL" --gpu="0.0" </dev/null; then
                 LOAD_OK=true; GPU="0.0"
             fi
         fi

@@ -10,17 +10,17 @@ import json
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 
+# === Model name from argument or default ===
+MODEL = sys.argv[1] if len(sys.argv) > 1 else "no-model-passed"
+script_dir = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
+
 # === Set up logging ===
 logging.basicConfig(
-    filename=os.path.join(os.getcwd(), "lmstudio_tray.log"),
+    filename=os.path.join(script_dir, "lmstudio_tray.log"),
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     filemode='w'
 )
-
-# === Model name from argument or default ===
-MODEL = sys.argv[1] if len(sys.argv) > 1 else "no-model-passed"
-script_dir = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
 INTERVAL = 10
 
 config_path = os.path.join(script_dir, "config.json")

@@ -6,7 +6,6 @@ import os
 import signal
 import logging
 import json
-from datetime import datetime
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib

@@ -9,8 +9,6 @@ LOGFILE="$SCRIPT_DIR/lmstudio_autostart.log"
 
 # === Konfiguration laden oder Setup ===
 CONFIG_FILE="$SCRIPT_DIR/config.json"
-echo "DEBUG: SCRIPT_DIR='$SCRIPT_DIR'" >&2
-echo "DEBUG: CONFIG_FILE='$CONFIG_FILE'" >&2
 
 setup_config() {
     echo "Konfiguration nicht gefunden. Setup wird gestartet."
@@ -25,7 +23,6 @@ setup_config() {
         exit 1
     fi
     echo "{\"appdir\": \"$APPDIR_INPUT\"}" > "$CONFIG_FILE"
-    echo "DEBUG: CONFIG_FILE='$CONFIG_FILE'" >&2
     echo "Konfiguration gespeichert in $CONFIG_FILE"
 }
 
@@ -34,6 +31,63 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 APPDIR=$(grep -o '"appdir": "[^"]*"' "$CONFIG_FILE" | sed 's/"appdir": "//;s/"//')
+
+# === Abhängigkeiten prüfen ===
+check_dependencies() {
+    local missing=()
+    local to_install=()
+
+    if ! command -v xdotool >/dev/null 2>&1; then
+        missing+=("xdotool")
+        to_install+=("sudo apt install xdotool")
+    fi
+    if ! command -v curl >/dev/null 2>&1; then
+        missing+=("curl")
+        to_install+=("sudo apt install curl")
+    fi
+    if ! command -v notify-send >/dev/null 2>&1; then
+        missing+=("notify-send (libnotify)")
+        to_install+=("sudo apt install libnotify-bin")
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        missing+=("python3")
+        to_install+=("sudo apt install python3")
+    fi
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "Folgende Abhängigkeiten fehlen: ${missing[*]}"
+        echo "Möchten Sie sie installieren? (J/n) [J]"
+        read -r answer
+        answer=${answer:-J}
+        if [[ "$answer" =~ ^[jJyYJ] ]]; then
+            for cmd in "${to_install[@]}"; do
+                echo "Führe: $cmd"
+                eval "$cmd"
+            done
+        else
+            echo "Abhängigkeiten sind erforderlich. Beende."
+            exit 1
+        fi
+    fi
+
+    if ! ls "$APPDIR"/LM-Studio-*.AppImage >/dev/null 2>&1; then
+        echo "LM Studio AppImage nicht gefunden in $APPDIR."
+        echo "Möchten Sie LM Studio herunterladen? (J/n) [J]"
+        read -r answer
+        answer=${answer:-J}
+        if [[ "$answer" =~ ^[jJyYJ] ]]; then
+            echo "Öffne Browser für Download..."
+            xdg-open "https://lmstudio.ai/" 2>/dev/null || echo "Bitte öffnen Sie https://lmstudio.ai/ manuell."
+            echo "Nach dem Download legen Sie die AppImage in $APPDIR und führen Sie das Skript erneut aus."
+            exit 0
+        else
+            echo "LM Studio AppImage ist erforderlich. Beende."
+            exit 1
+        fi
+    fi
+}
+
+check_dependencies
 
 # === Logdatei im Skriptverzeichnis ===
 LOGFILE="$SCRIPT_DIR/lmstudio_autostart.log"

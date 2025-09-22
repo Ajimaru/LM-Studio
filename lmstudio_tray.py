@@ -35,8 +35,9 @@ except:
 
 # === GTK icon names from the icon browser ===
 ICON_OK = "emblem-default"         # ✅ Model active
-ICON_FAIL = "emblem-unreadable"    # ❌ Model not loaded
-ICON_WARN = "dialog-warning"       # ⚠️ Error status
+ICON_FAIL = "emblem-unreadable"    # ❌ LM-Studio not running
+ICON_WARN = "dialog-warning"       # ⚠️ No modell loaded
+ICON_INFO = "help-info"            # ℹ️ Loaded model changed
 
 # === Path to lms-CLI ===
 LMS_CLI = os.path.expanduser("~/.lmstudio/bin/lms")
@@ -170,16 +171,17 @@ class TrayIcon:
                     current_status = "OK"
                     self.status_icon.set_from_icon_name(ICON_OK)
                     self.status_icon.set_tooltip_text(f"✅ Model active: {MODEL}")
+                elif result.stdout.strip():
+                    current_status = "INFO"
+                    lines = result.stdout.strip().split('\n')
+                    loaded_models = [line.split()[1] if len(line.split()) > 1 else 'Unknown' for line in lines[1:]]
+                    tooltip = f"ℹ️ Loaded model changed (expected: {MODEL})\nLoaded: {', '.join(loaded_models[:3])}"
+                    self.status_icon.set_from_icon_name(ICON_INFO)
+                    self.status_icon.set_tooltip_text(tooltip)
                 else:
                     current_status = "WARN"
-                    lines = result.stdout.strip().split('\n')
-                    if len(lines) > 1:
-                        loaded_models = [line.split()[1] if len(line.split()) > 1 else 'Unknown' for line in lines[1:]]
-                        tooltip = f"⚠️ Different/no model loaded (expected: {MODEL})\nLoaded: {', '.join(loaded_models[:3])}"
-                    else:
-                        tooltip = f"⚠️ Different/no model loaded (expected: {MODEL})"
                     self.status_icon.set_from_icon_name(ICON_WARN)
-                    self.status_icon.set_tooltip_text(tooltip)
+                    self.status_icon.set_tooltip_text(f"⚠️ No modell loaded (expected: {MODEL})")
             else:
                 current_status = "FAIL"
                 self.status_icon.set_from_icon_name(ICON_FAIL)
@@ -188,8 +190,10 @@ class TrayIcon:
             if self.last_status != current_status and self.last_status is not None:
                 if current_status == "OK":
                     subprocess.run(["notify-send", "LM Studio", f"✅ Model {MODEL} is now active"])
+                elif current_status == "INFO":
+                    subprocess.run(["notify-send", "LM Studio", f"ℹ️ Model changed to another one"])
                 elif current_status == "WARN":
-                    subprocess.run(["notify-send", "LM Studio", f"⚠️ Model {MODEL} no longer active"])
+                    subprocess.run(["notify-send", "LM Studio", f"⚠️ No model loaded (expected: {MODEL})"])
                 elif current_status == "FAIL":
                     subprocess.run(["notify-send", "LM Studio", "❌ LM Studio has stopped"])
                 logging.info(f"Status change: {self.last_status} -> {current_status}")

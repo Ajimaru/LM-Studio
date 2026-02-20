@@ -655,6 +655,6 @@ elif have python3.10; then
 elif have python3; then
     python3 "$SCRIPT_DIR/lmstudio_tray.py" "$TRAY_MODEL" "$SCRIPT_DIR" "$TRAY_DEBUG_ARG" &
 else
-    echo "$(date '+%Y-%m-%d %H:%M:%S') ⚠️ Tray not started – no Python interpreter found."
+    echo "$(date '+%Y-%m-%d %H:%M:%S') ⚠️ Tray not started - no Python interpreter found."
 fi
 

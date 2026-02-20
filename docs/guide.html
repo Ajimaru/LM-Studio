@@ -183,9 +183,9 @@
             <h2>Introduction</h2>
             <p>This documentation covers the LM Studio automation setup and scripts. The project provides:</p>
             <ul>
-                <li><code>setup.sh</code> – One-time setup script to create Python virtual environment (see <a href="../README.md" target="_blank" rel="noopener">README.md</a>)</li>
-                <li><code>lmstudio_autostart.sh</code> – Bash script for automated daemon startup and model loading</li>
-                <li><code>lmstudio_tray.py</code> – Python script for system tray monitoring</li>
+                <li><code>setup.sh</code> - One-time setup script to create Python virtual environment (see <a href="../README.md" target="_blank" rel="noopener">README.md</a>)</li>
+                <li><code>lmstudio_autostart.sh</code> - Bash script for automated daemon startup and model loading</li>
+                <li><code>lmstudio_tray.py</code> - Python script for system tray monitoring</li>
             </ul>
             <p>The <code>lmstudio_autostart.sh</code> script ensures the LM Studio daemon is running, waits for the API, optionally loads a model, and starts the tray monitor. The <code>lmstudio_tray.py</code> script provides a system tray icon for real-time monitoring and quick actions.</p>
             <p><strong>All log files are written to the <code>.logs/</code> directory</strong> for easy access and cleanup.</p>
@@ -206,15 +206,15 @@
             <pre><code>./setup.sh</code></pre>
             <p>This interactive script will check for and install:</p>
             <ul>
-                <li><strong>LM Studio Daemon</strong> – Verifies <code>lms</code> CLI is installed (llmster v0.0.3+)</li>
-                <li><strong>LM Studio Desktop App</strong> – Detects .deb package or AppImage installation
+                <li><strong>LM Studio Daemon</strong> - Verifies <code>lms</code> CLI is installed (llmster v0.0.3+)</li>
+                <li><strong>LM Studio Desktop App</strong> - Detects .deb package or AppImage installation
                     <ul class="nested-list">
                         <li>Searches in: script directory, <code>$HOME/Apps</code>, <code>$HOME/LM_Studio</code>, <code>$HOME/Applications</code>, <code>$HOME/.local/bin</code>, <code>/opt/lm-studio</code></li>
                         <li>Supports both standard and versioned AppImage formats</li>
                     </ul>
                 </li>
-                <li><strong>Python 3.10</strong> – Automatically installs via apt if missing</li>
-                <li><strong>Python venv</strong> – Creates isolated environment with PyGObject/GTK3 support in <code>venv/</code></li>
+                <li><strong>Python 3.10</strong> - Automatically installs via apt if missing</li>
+                <li><strong>Python venv</strong> - Creates isolated environment with PyGObject/GTK3 support in <code>venv/</code></li>
             </ul>
             <p>The script will prompt for missing components with helpful guidance and log all operations to <code>.logs/setup.log</code>.</p>
             <p>After setup completes, check the setup log:</p>
@@ -294,16 +294,16 @@ EOF</code></pre>
             <h3>Status Indicators (in Menu)</h3>
             <p>When you right-click the tray icon, the menu shows live status for each option:</p>
             <ul>
-                <li><strong>🟢 (Green Circle)</strong> – Component is currently running/active</li>
-                <li><strong>🟡 (Yellow Circle)</strong> – Component is installed but not running</li>
-                <li><strong>🔴 (Red Circle)</strong> – Component is not found/not installed</li>
+                <li><strong>🟢 (Green Circle)</strong> - Component is currently running/active</li>
+                <li><strong>🟡 (Yellow Circle)</strong> - Component is installed but not running</li>
+                <li><strong>🔴 (Red Circle)</strong> - Component is not found/not installed</li>
             </ul>
             <h3>Tray Icon Schema</h3>
             <ul>
-                <li><strong>❌</strong> – Daemon and desktop app are not installed</li>
-                <li><strong>⚠️</strong> – Neither daemon nor desktop app is running</li>
-                <li><strong>ℹ️</strong> – Daemon or desktop app is running, but no model is loaded</li>
-                <li><strong>✅</strong> – A model is loaded</li>
+                <li><strong>❌</strong> - Daemon and desktop app are not installed</li>
+                <li><strong>⚠️</strong> - Neither daemon nor desktop app is running</li>
+                <li><strong>ℹ️</strong> - Daemon or desktop app is running, but no model is loaded</li>
+                <li><strong>✅</strong> - A model is loaded</li>
             </ul>
             <h3>Tray Menu Options</h3>
             <ul>
@@ -311,14 +311,14 @@ EOF</code></pre>
                     <ul class="status-sublist">
                         <li>🟢 App is currently running</li>
                         <li>🟡 App is installed but not running (will start on click)</li>
-                        <li>🔴 App not found ({.deb or AppImage) – disabled</li>
+                        <li>🔴 App not found ({.deb or AppImage) - disabled</li>
                     </ul>
                 </li>
                 <li><strong>🟢/🟡/🔴 Start LM Studio Daemon:</strong> Ensure daemon is running
                     <ul class="status-sublist-compact">
                         <li>🟢 Daemon is currently active</li>
                         <li>🟡 Daemon is installed but stopped (will start on click)</li>
-                        <li>🔴 Daemon not found – install from lmstudio.ai</li>
+                        <li>🔴 Daemon not found - install from lmstudio.ai</li>
                     </ul>
                 </li>
                 <li><strong>Stop Desktop App:</strong> Stops LM Studio desktop process</li>
@@ -354,7 +354,7 @@ EOF</code></pre>
                     Tray -->|"Monitors"| API
             </div>
 
-            <h3>setup.sh – Virtual Environment Setup Script</h3>
+            <h3>setup.sh - Virtual Environment Setup Script</h3>
             <div class="mermaid">
                 graph TD
                     A["<b>setup.sh</b><br/>START"] --> B[Check Python 3.10<br/>availability]
@@ -367,7 +367,7 @@ EOF</code></pre>
                     H --> I["<b>END (Success)</b><br/>venv/ ready"]
             </div>
 
-            <h3>lmstudio_autostart.sh – Daemon Orchestration Script</h3>
+            <h3>lmstudio_autostart.sh - Daemon Orchestration Script</h3>
             <div class="mermaid">
                 graph TD
                     A["<b>lmstudio_autostart.sh</b><br/>START"] --> B[Check system dependencies]
@@ -386,7 +386,7 @@ EOF</code></pre>
                     L --> I
             </div>
 
-            <h3>lmstudio_tray.py – GTK3 System Tray Monitor</h3>
+            <h3>lmstudio_tray.py - GTK3 System Tray Monitor</h3>
             <div class="mermaid">
                 graph TD
                     A["<b>lmstudio_tray.py</b><br/>START"] --> B[Kill existing instances]
@@ -472,9 +472,9 @@ EOF</code></pre>
             <h3>Log Files</h3>
             <p>All output is logged to the <code>.logs/</code> directory:</p>
             <ul>
-                <li><code>.logs/setup.log</code> – Setup script installation log</li>
-                <li><code>.logs/lmstudio_autostart.log</code> – Daemon startup and model loading logs</li>
-                <li><code>.logs/lmstudio_tray.log</code> – System tray monitor logs</li>
+                <li><code>.logs/setup.log</code> - Setup script installation log</li>
+                <li><code>.logs/lmstudio_autostart.log</code> - Daemon startup and model loading logs</li>
+                <li><code>.logs/lmstudio_tray.log</code> - System tray monitor logs</li>
             </ul>
             <p>Check logs in real-time:</p>
             <pre><code>cat .logs/setup.log
@@ -521,9 +521,9 @@ grep -i "error" .logs/*.log</code></pre>
             <h2>Official Resources</h2>
             <p>Learn more about LM Studio and stay updated with the latest developments:</p>
             <ul>
-                <li><a href="https://lmstudio.ai/blog" target="_blank" rel="noopener">Blog</a> – Latest updates, news, and release announcements for LM Studio</li>
-                <li><a href="https://lmstudio.ai/docs/app" target="_blank" rel="noopener">Official Documentation</a> – Comprehensive guide and API documentation for LM Studio</li>
-                <li><a href="https://lmstudio.ai/download" target="_blank" rel="noopener">Download</a> – Download the latest version of LM Studio for your platform</li>
+                <li><a href="https://lmstudio.ai/blog" target="_blank" rel="noopener">Blog</a> - Latest updates, news, and release announcements for LM Studio</li>
+                <li><a href="https://lmstudio.ai/docs/app" target="_blank" rel="noopener">Official Documentation</a> - Comprehensive guide and API documentation for LM Studio</li>
+                <li><a href="https://lmstudio.ai/download" target="_blank" rel="noopener">Download</a> - Download the latest version of LM Studio for your platform</li>
             </ul>
         </section>
     </main>

@@ -36,22 +36,22 @@ The `setup.sh` script automates the complete setup process for LM Studio automat
 
 The setup script checks for and optionally installs:
 
-1. **LM Studio Daemon (llmster)** – Headless backend for model inference
+1. **LM Studio Daemon (llmster)** - Headless backend for model inference
    - Checks if `lms` CLI is available
    - If not found: Opens download page and asks to install
 
-2. **LM Studio Desktop App** – GUI for model management
+2. **LM Studio Desktop App** - GUI for model management
    - Intelligently detects .deb package installation
    - Searches for AppImage in: script directory, $HOME/Apps, $HOME/LM_Studio, $HOME/Applications, $HOME/.local/bin, /opt/lm-studio
    - Auto-detects both standard and versioned AppImage formats (e.g., LM-Studio-0.4.3-*.AppImage)
    - Allows manual AppImage path input
    - Optional (only needed for `--gui` option)
 
-3. **Python 3.10** – Required for PyGObject/GTK3 compatibility
+3. **Python 3.10** - Required for PyGObject/GTK3 compatibility
    - Checks for availability
    - Installs automatically if missing (via `apt`)
 
-4. **Python Virtual Environment** – Isolated Python environment
+4. **Python Virtual Environment** - Isolated Python environment
    - Creates venv with system site-packages
    - Enables GTK3 introspection and PyGObject
 
@@ -197,10 +197,10 @@ The menu shows status indicators before each option when you right-click the tra
 
 **Tray Icon Meaning:**
 
-- **❌ (Fail)** – Daemon and desktop app are both not installed
-- **⚠️ (Warn)** – Neither daemon nor desktop app is running
-- **ℹ️ (Info)** – Daemon or desktop app is running, but no model is loaded
-- **✅ (OK)** – A model is loaded
+- **❌ (Fail)** - Daemon and desktop app are both not installed
+- **⚠️ (Warn)** - Neither daemon nor desktop app is running
+- **ℹ️ (Info)** - Daemon or desktop app is running, but no model is loaded
+- **✅ (OK)** - A model is loaded
 
 **For "Start Desktop App":**
 

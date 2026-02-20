@@ -10,7 +10,7 @@
 [![LM Studio Daemon v0.0.3+](https://img.shields.io/badge/LM_Studio_Daemon-v0.0.3+-green.svg)](https://lmstudio.ai)
 [![Made with Love in 🇪🇺](https://img.shields.io/badge/Made_with_❤️_in_🇪🇺-gray.svg)](https://europa.eu/)
 
-Automation scripts for LM Studio – a powerful desktop and server application for running Large Language Models locally on consumer hardware.
+Automation scripts for LM Studio - a powerful desktop and server application for running Large Language Models locally on consumer hardware.
 
 ## Features
 
@@ -33,9 +33,9 @@ After cloning the repository, follow these steps to set up the automation enviro
 
 This comprehensive setup script:
 
-- ✓ Checks for LM Studio daemon (llmster) – installs if missing
-- ✓ Checks for LM Studio desktop app – intelligently detects .deb or AppImage
-- ✓ Checks for Python 3.10 – installs via apt if missing
+- ✓ Checks for LM Studio daemon (llmster) - installs if missing
+- ✓ Checks for LM Studio desktop app - intelligently detects .deb or AppImage
+- ✓ Checks for Python 3.10 - installs via apt if missing
 - ✓ Creates Python 3.10 virtual environment with PyGObject/GTK3 support
 
 The script will guide you through interactive setup steps if needed.
@@ -126,10 +126,10 @@ cat .logs/lmstudio_tray.log
 
 ## Documentation
 
-- **[Docs Landing Page](docs/index.html)** – GitHub Pages entry point with links to all docs
-- **[Full Documentation](docs/guide.html)** – Detailed usage examples, flow diagrams, and architecture
-- **[Virtual Environment Setup](docs/VENV_SETUP.md)** – Guide for Python environment configuration and troubleshooting
-- **[Python Docstrings Reference](docs/python_docstrings.html)** – Static API-style view of `lmstudio_tray.py` docstrings
+- **[Docs Landing Page](docs/index.html)** - GitHub Pages entry point with links to all docs
+- **[Full Documentation](docs/guide.html)** - Detailed usage examples, flow diagrams, and architecture
+- **[Virtual Environment Setup](docs/VENV_SETUP.md)** - Guide for Python environment configuration and troubleshooting
+- **[Python Docstrings Reference](docs/python_docstrings.html)** - Static API-style view of `lmstudio_tray.py` docstrings
 
 ## Requirements
 
@@ -140,13 +140,13 @@ cat .logs/lmstudio_tray.log
 
 ## Official Resources
 
-- [LM Studio Blog](https://lmstudio.ai/blog) – Latest updates and announcements
-- [LM Studio Documentation](https://lmstudio.ai/docs/app) – Complete API and feature documentation
-- [LM Studio Download](https://lmstudio.ai/download) – Get the latest version
+- [LM Studio Blog](https://lmstudio.ai/blog) - Latest updates and announcements
+- [LM Studio Documentation](https://lmstudio.ai/docs/app) - Complete API and feature documentation
+- [LM Studio Download](https://lmstudio.ai/download) - Get the latest version
 
 ## License
 
-MIT License – See [LICENSE](LICENSE) file for details
+MIT License - See [LICENSE](LICENSE) file for details
 
 ---
 

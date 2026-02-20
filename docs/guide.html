@@ -353,7 +353,7 @@ EOF</code></pre>
                     Autostart["<b>lmstudio_autostart.sh</b><br/>Daemon Orchestration"]
                     Tray["<b>lmstudio_tray.py</b><br/>GTK3 System Tray Monitor"]
                     Daemon["LM Studio Daemon<br/>(llmster)"]
-                    API["LM Studio API<br/>http://localhost:1234"]
+                    API["LM Studio API<br/>localhost:1234"]
                     Models["Model Files"]
                     
                     User -->|"1. First run"| Setup
@@ -390,7 +390,7 @@ EOF</code></pre>
                     E --> L["Start lmstudio_tray.py<br/>in background"]
                     L --> I["<b>END</b>"]
                     C -->|No| F[Start LM Studio daemon]
-                    F --> G[Wait for API<br/>http://localhost:1234]
+                    F --> G[Wait for API<br/>localhost:1234]
                     G --> H{Model specified?}
                     H -->|Yes| J[Load model via lms CLI]
                     H -->|No| K[Skip model loading]

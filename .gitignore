@@ -4,3 +4,9 @@
 *.pid.lock
 *.json
 __pycache__
+
+#Ignore AI rules
+.github/instructions/codacy.instructions.md
+.qodo/
+.codacy/
+.vscode/

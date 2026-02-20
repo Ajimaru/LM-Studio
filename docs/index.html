@@ -88,6 +88,7 @@
         header .title h1 { margin: 0; font-weight: 700; letter-spacing: .2px; }
         .badge { background: linear-gradient(135deg, var(--accent-2), var(--accent-3)); color: #0c1022; padding: 2px 8px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
         .read-time { color: var(--muted-text); font-size: .95rem; }
+        .header-actions { display:flex; gap:10px; align-items:center; }
 
         section { background: var(--bg-elev); border: 1px solid var(--border-color); box-shadow: var(--shadow); padding: 18px 18px 8px; border-radius: 14px; margin: 18px 0; }
         section h2 { margin-top: 0; color: var(--accent-color); }
@@ -155,6 +156,7 @@
             <li><a href="#flow-diagrams">Flow Diagrams</a></li>
             <li><a href="#usage">Usage</a></li>
             <li><a href="#configuration">Configuration</a></li>
+            <li><a href="#resources">Official Resources</a></li>
         </ul>
     </nav>
 
@@ -163,7 +165,7 @@
             <div class="title">
                 <h1>LM Studio Automation Scripts Documentation</h1>
             </div>
-            <div class="header-actions" style="display:flex; gap:10px; align-items:center">
+            <div class="header-actions">
                 <div class="read-time" id="read-time">Estimated read time: calculating…</div>
                 <button class="theme-toggle" id="theme-toggle" aria-pressed="false" aria-label="Toggle color theme">Dark</button>
             </div>
@@ -172,17 +174,16 @@
         <section id="introduction">
             <h2>Introduction</h2>
             <p>This documentation covers two automation scripts for LM Studio: a Bash script for automated startup and model loading, and a Python script for system tray monitoring.</p>
-            <p>The <code>lmstudio_autostart.sh</code> script handles the initial setup, dependency checking, LM Studio GUI startup, and optional model loading. The <code>lmstudio_tray.py</code> script provides a system tray icon for monitoring model status and quick actions.</p>
+            <p>The <code>lmstudio_autostart.sh</code> script ensures the LM Studio daemon is running, waits for the API, and optionally loads a model. The <code>lmstudio_tray.py</code> script provides a system tray icon for monitoring model status and quick actions.</p>
         </section>
 
         <section id="autostart-script">
             <h2>LM Studio Autostart Script (<code>lmstudio_autostart.sh</code>)</h2>
             <p>This Bash script automates the startup process of LM Studio. It performs the following main tasks:</p>
             <ul>
-                <li>Loads configuration from <code>config.json</code></li>
-                <li>Checks and installs required dependencies (xdotool, curl, notify-send, python3)</li>
-                <li>Starts the LM Studio AppImage GUI</li>
-                <li>Minimizes the window (on X11, skips on Wayland)</li>
+                <li>Checks and installs required dependencies (curl, notify-send, python3)</li>
+                <li>Starts or ensures the LM Studio daemon is running</li>
+                <li>Optionally starts the LM Studio GUI (stops daemon first)</li>
                 <li>Waits for the LM Studio API to be available</li>
                 <li>Optionally loads a specified model using lms-CLI</li>
                 <li>Starts the tray monitor script</li>
@@ -195,10 +196,12 @@
                 -h, --help        Show help and exit
                 -L, --list-models List local models (interactive selection in TTY)
                 -m, --model NAME  Load specified model (empty NAME loads no model)
+                -g, --gui          Start the LM Studio GUI (stops daemon first)
 
             Environment variables:
                 LM_AUTOSTART_DEBUG=1            Force debug mode
-                LM_AUTOSTART_SELECT_TIMEOUT=30  Timeout for interactive selection</code></pre>
+                LM_AUTOSTART_SELECT_TIMEOUT=30  Timeout for interactive selection
+                LM_AUTOSTART_GUI_CMD="..."      Explicit GUI start command</code></pre>
         </section>
 
         <section id="tray-script">
@@ -213,7 +216,7 @@
             </ul>
             <h3>Tray Menu Options</h3>
             <ul>
-                <li><strong>Open LM Studio:</strong> Launches or focuses the LM Studio GUI</li>
+                <li><strong>Start LM Studio Daemon:</strong> Ensures the LM Studio daemon is running</li>
                 <li><strong>Reload Model:</strong> Reloads the specified model</li>
                 <li><strong>Show Status:</strong> Displays current LM Studio status in a dialog</li>
                 <li><strong>Quit Tray:</strong> Terminates the tray monitor</li>
@@ -225,29 +228,19 @@
             <h3>Autostart Script Flow</h3>
             <div class="mermaid">
                 graph TD
-                    A[Start] --> B{Config exists?}
-                    B -->|No| C[Setup config]
-                    B -->|Yes| D[Load config]
-                    C --> D
-                    D --> E[Check dependencies]
-                    E --> F{Dependencies OK?}
-                    F -->|No| G[Install dependencies]
-                    F -->|Yes| H[Check LM Studio AppImage]
-                    G --> H
-                    H --> I{AppImage found?}
-                    I -->|No| J[Prompt download]
-                    I -->|Yes| K{Already running?}
-                    K -->|Yes| L[Skip start]
-                    K -->|No| M[Start LM Studio GUI]
-                    M --> N[Minimize window]
-                    N --> O[Wait for API]
-                    O --> P{Model specified?}
-                    P -->|Yes| Q[Load model]
-                    P -->|No| R[Skip model loading]
-                    Q --> S[Start tray monitor]
-                    R --> S
-                    L --> S
-                    S --> T[End]
+                    A[Start] --> B[Check dependencies]
+                    B --> C{--gui?}
+                    C -->|Yes| D[Stop daemon]
+                    D --> E[Start GUI]
+                    E --> I[End]
+                    C -->|No| F[Start LM Studio daemon]
+                    F --> G[Wait for API]
+                    G --> H{Model specified?}
+                    H -->|Yes| J[Load model]
+                    H -->|No| K[Skip model loading]
+                    J --> L[Start tray monitor]
+                    K --> L
+                    L --> I
             </div>
 
             <h3>Tray Monitor Flow</h3>
@@ -272,7 +265,7 @@
                     N --> O
                     O --> F
                     F --> P{User action?}
-                    P -->|Open LM Studio| Q[Launch GUI]
+                    P -->|Start daemon| Q[Start daemon]
                     P -->|Reload Model| R[Reload model]
                     P -->|Show Status| S[Show dialog]
                     P -->|Quit| T[Exit]
@@ -287,6 +280,10 @@
             <h3>Basic Startup</h3>
             <pre><code>./lmstudio_autostart.sh</code></pre>
             <p>This starts LM Studio with default settings, checking dependencies and configuration.</p>
+
+            <h3>Start GUI (stops daemon first)</h3>
+            <pre><code>./lmstudio_autostart.sh --gui</code></pre>
+            <p>Stops the daemon, starts the GUI, and exits the script.</p>
 
             <h3>Load Specific Model</h3>
             <pre><code>./lmstudio_autostart.sh --model qwen2.5:7b-instruct</code></pre>
@@ -303,15 +300,21 @@
 
         <section id="configuration">
             <h2>Configuration</h2>
-            <p>The scripts use a <code>config.json</code> file in the script directory. On first run, the autostart script will prompt for the LM Studio AppImage folder path.</p>
-            <p>Example <code>config.json</code>:</p>
-            <pre><code>{
-                        "appdir": "/path/to/lm-studio/appimages"
-                        }</code></pre>
+            <p>No configuration file is required for the daemon workflow. You can delete <code>config.json</code> if it only contains AppImage paths.</p>
             <p>Environment variables can be set to customize behavior:</p>
             <ul>
                 <li><code>LM_AUTOSTART_DEBUG=1</code>: Force debug mode</li>
                 <li><code>LM_AUTOSTART_SELECT_TIMEOUT=30</code>: Timeout for model selection</li>
+            </ul>
+        </section>
+
+        <section id="resources">
+            <h2>Official Resources</h2>
+            <p>Learn more about LM Studio and stay updated with the latest developments:</p>
+            <ul>
+                <li><a href="https://lmstudio.ai/blog" target="_blank" rel="noopener">Blog</a> – Latest updates, news, and release announcements for LM Studio</li>
+                <li><a href="https://lmstudio.ai/docs/app" target="_blank" rel="noopener">Official Documentation</a> – Comprehensive guide and API documentation for LM Studio</li>
+                <li><a href="https://lmstudio.ai/download" target="_blank" rel="noopener">Download</a> – Download the latest version of LM Studio for your platform</li>
             </ul>
         </section>
     </main>

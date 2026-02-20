@@ -7,40 +7,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # === Log file in script directory ===
 LOGFILE="$SCRIPT_DIR/lmstudio_autostart.log"
 
-# === Configuration load or setup ===
-CONFIG_FILE="$SCRIPT_DIR/config.json"
-
-setup_config() {
-    echo "Configuration not found. Starting setup."
-    echo "Enter the path to the folder where the LM Studio AppImage is stored (Tab for autocompletion):"
-    read -e -p "AppImage folder: " APPDIR_INPUT
-    if [ -z "$APPDIR_INPUT" ]; then
-        echo "Error: Path cannot be empty." >&2
-        exit 1
-    fi
-    if [ ! -d "$APPDIR_INPUT" ]; then
-        echo "Error: Folder does not exist." >&2
-        exit 1
-    fi
-    echo "{\"appdir\": \"$APPDIR_INPUT\"}" > "$CONFIG_FILE"
-    echo "Configuration saved in $CONFIG_FILE"
-}
-
-if [ ! -f "$CONFIG_FILE" ]; then
-    setup_config
-fi
-
-APPDIR=$(grep -o '"appdir": "[^"]*"' "$CONFIG_FILE" | sed 's/"appdir": "//;s/"//')
-
 # === Check dependencies ===
 check_dependencies() {
     local missing=()
     local to_install=()
 
-    if ! command -v xdotool >/dev/null 2>&1; then
-        missing+=("xdotool")
-        to_install+=("sudo apt install xdotool")
-    fi
     if ! command -v curl >/dev/null 2>&1; then
         missing+=("curl")
         to_install+=("sudo apt install curl")
@@ -53,35 +24,29 @@ check_dependencies() {
         missing+=("python3")
         to_install+=("sudo apt install python3")
     fi
+    if ! command -v lms >/dev/null 2>&1 && [ ! -x "$HOME/.lmstudio/bin/lms" ]; then
+        missing+=("lms (LM Studio daemon CLI)")
+    fi
 
     if [ ${#missing[@]} -gt 0 ]; then
         echo "The following dependencies are missing: ${missing[*]}"
-        echo "Do you want to install them? (Y/n) [Y]"
-        read -r answer
-        answer=${answer:-Y}
-        if [[ "$answer" =~ ^[yYnN] ]]; then
-            for cmd in "${to_install[@]}"; do
-                echo "Running: $cmd"
-                eval "$cmd"
-            done
-        else
-            echo "Dependencies are required. Exiting."
-            exit 1
+        if [ ${#to_install[@]} -gt 0 ]; then
+            echo "Do you want to install the apt-based dependencies now? (Y/n) [Y]"
+            read -r answer
+            answer=${answer:-Y}
+            if [[ "$answer" =~ ^[yYnN] ]]; then
+                for cmd in "${to_install[@]}"; do
+                    echo "Running: $cmd"
+                    eval "$cmd"
+                done
+            else
+                echo "Dependencies are required. Exiting."
+                exit 1
+            fi
         fi
-    fi
-
-    if ! ls "$APPDIR"/LM-Studio-*.AppImage >/dev/null 2>&1; then
-        echo "LM Studio AppImage not found in $APPDIR."
-        echo "Do you want to download LM Studio? (Y/n) [Y]"
-        read -r answer
-        answer=${answer:-Y}
-        if [[ "$answer" =~ ^[yYnN] ]]; then
-            echo "Opening browser for download..."
-            xdg-open "https://lmstudio.ai/" 2>/dev/null || echo "Please open https://lmstudio.ai/ manually."
-            echo "After downloading, place the AppImage in $APPDIR and run the script again."
-            exit 0
-        else
-            echo "LM Studio AppImage is required. Exiting."
+        if ! command -v lms >/dev/null 2>&1 && [ ! -x "$HOME/.lmstudio/bin/lms" ]; then
+            echo "LM Studio daemon CLI (lms) is missing. Install LM Studio for Linux:" >&2
+            echo "  https://lmstudio.ai/" >&2
             exit 1
         fi
     fi
@@ -97,8 +62,7 @@ usage() {
     cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
 
-Starts LM Studio (AppImage) after initial setup (configuration of AppImage folder),
-checks and installs dependencies (xdotool, curl, notify-send, python3), minimizes the window under X11,
+Starts the LM Studio daemon, checks and installs dependencies (curl, notify-send, python3),
 optionally loads a model via lms-CLI with GPU fallback and starts the tray monitor with status monitoring.
 The log file is created anew per run: $LOGFILE
 
@@ -107,14 +71,16 @@ Options:
     -h, --help        Show this help and exit
     -L, --list-models List local models; in TTY: interactive selection with 30s auto-skip (no LM Studio start before selection)
     -m, --model NAME  Load specified model (if NAME is missing, no model is loaded)
+    -g, --gui         Start the LM Studio GUI (stops daemon first)
 
 Environment variables:
     LM_AUTOSTART_DEBUG=1            Force debug mode (equivalent to --debug)
     LM_AUTOSTART_SELECT_TIMEOUT=30  Timeout (seconds) for interactive -L selection; after expiry, "Skip" is automatically selected
+    LM_AUTOSTART_GUI_CMD="..."      Explicit command to launch the GUI
 
 Exit codes:
     0  Success
-    1  AppImage not found or setup failed
+    1  Daemon not available or setup failed
     2  Invalid option/usage
     3  No models found (-L mode)
 
@@ -125,6 +91,7 @@ Examples:
     $(basename "$0") -m qwen2.5:7b-instruct      # Short form
     $(basename "$0") -m                          # Flag without name: loads no model
     $(basename "$0") -L                          # Interactive model selection (in TTY) or list (without TTY)
+    $(basename "$0") --gui                       # Start the GUI in addition to the daemon
 EOF
 }
 
@@ -187,6 +154,7 @@ DEBUG_FLAG=0
 MODEL=""
 LIST_MODELS=0
 MODEL_EXPLICIT=0
+GUI_FLAG=0
 SELECT_TIMEOUT="${LM_AUTOSTART_SELECT_TIMEOUT:-30}"
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -196,6 +164,8 @@ while [ $# -gt 0 ]; do
                         usage; exit 0 ;;
         --list-models|-L)
             LIST_MODELS=1; shift ;;
+        --gui|-g)
+            GUI_FLAG=1; shift ;;
         --model|-m)
             if [ -n "${2:-}" ] && [ "${2#-}" != "$2" ]; then
                 shift
@@ -221,7 +191,7 @@ done
 countdown_prompt() {
     local timeout="$1"; shift
     local prompt="$*"
-    local t pid
+    local t
     t="$timeout"
     {
         while [ "$t" -gt 0 ]; do
@@ -343,12 +313,8 @@ if [ "$DEBUG_FLAG" = "1" ]; then
 else
     exec > >(sed 's/\x1b\[[0-9;]*m//g' >> "$LOGFILE") 2>&1
 fi
-LMSTUDIO_APPIMAGE=$(ls -t "$APPDIR"/LM-Studio-*.AppImage | head -n 1)
 LMS_CLI="$HOME/.lmstudio/bin/lms"
 GPU="1.0"
-MAX_WAIT=30
-INTERVAL=1
-WAIT_FOR_LMS=60
 LMS_RETRIES=3
 LMS_RETRY_SLEEP=5
 
@@ -358,6 +324,62 @@ export LMSTUDIO_DISABLE_AUTO_LAUNCH=true
 
 # === Check dependencies (interactive suggestions) ===
 have() { command -v "$1" >/dev/null 2>&1; }
+get_lms_cmd() {
+    if [ -x "$LMS_CLI" ]; then
+        printf '%s\n' "$LMS_CLI"
+        return 0
+    fi
+    if have lms; then
+        command -v lms
+        return 0
+    fi
+    return 1
+}
+
+start_gui() {
+    local desktop_id
+    if [ -n "${LM_AUTOSTART_GUI_CMD:-}" ]; then
+        IFS=' ' read -r -a gui_cmd <<<"$LM_AUTOSTART_GUI_CMD"
+        if [ ${#gui_cmd[@]} -gt 0 ]; then
+            "${gui_cmd[@]}" >/dev/null 2>&1 &
+            return 0
+        fi
+    fi
+    if have lmstudio; then
+        lmstudio >/dev/null 2>&1 &
+        return 0
+    fi
+    if have lm-studio; then
+        lm-studio >/dev/null 2>&1 &
+        return 0
+    fi
+    if have gtk-launch; then
+        for desktop_id in lmstudio lm-studio; do
+            gtk-launch "$desktop_id" >/dev/null 2>&1 &
+            return 0
+        done
+    fi
+    if have xdg-open; then
+        xdg-open "lmstudio://" >/dev/null 2>&1 &
+        return 0
+    fi
+    echo "⚠️ GUI start failed. Set LM_AUTOSTART_GUI_CMD to a valid command." >&2
+    return 1
+}
+
+stop_daemon() {
+    local lms_cmd
+    lms_cmd="$(get_lms_cmd || true)"
+    if [ -z "$lms_cmd" ]; then
+        return 0
+    fi
+    set +e
+    "$lms_cmd" daemon down >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        "$lms_cmd" daemon stop >/dev/null 2>&1
+    fi
+    set -e
+}
 
 resolve_model_arg() {
     local input="$1"; local lmscmd="$2"
@@ -405,7 +427,7 @@ ensure_model_registered() {
             if [ -n "$id" ]; then printf '%s\n' "$id"; return 0; fi
         fi
         local best_id="" best_score=0 candidate
-        local tokens token base_lc
+        local tokens base_lc
         base_lc="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]')"
         base_lc="${base_lc%.gguf}"; base_lc="${base_lc%.bin}"; base_lc="${base_lc%.safetensors}"
         base_lc="$(printf '%s' "$base_lc" | sed 's/[_.-]/ /g')"
@@ -457,55 +479,33 @@ ensure_model_registered() {
     printf '%s\n' "$path"
 }
 
-SESSION_TYPE="${XDG_SESSION_TYPE:-}"
-IS_WAYLAND=false; [ "${SESSION_TYPE,,}" = "wayland" ] && IS_WAYLAND=true || true
+if [ "$GUI_FLAG" -eq 1 ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') 🛑 Stopping LM Studio daemon before GUI..."
+    stop_daemon || true
+    echo "$(date '+%Y-%m-%d %H:%M:%S') 🖥️ Starting LM Studio GUI..."
+    start_gui || true
+    exit 0
+fi
 
-if [ ! -f "$LMSTUDIO_APPIMAGE" ]; then
-    echo "❌ No LM Studio AppImage found in $APPDIR"
+LMS_CMD="$(get_lms_cmd || true)"
+if [ -z "$LMS_CMD" ]; then
+    echo "❌ lms CLI not found. Please install LM Studio." >&2
     exit 1
 fi
 
-is_running=false
-if command -v pgrep >/dev/null 2>&1; then
-    if pgrep -f "$(basename "$LMSTUDIO_APPIMAGE")" >/dev/null 2>&1 || pgrep -f "LM Studio" >/dev/null 2>&1; then
-        is_running=true
-    fi
+echo "$(date '+%Y-%m-%d %H:%M:%S') 🚀 Starting LM Studio daemon..."
+set +e
+"$LMS_CMD" daemon up
+DAEMON_RC=$?
+set -e
+if [ $DAEMON_RC -ne 0 ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ Failed to start LM Studio daemon (exit $DAEMON_RC)." >&2
+    exit 1
 fi
 
-if $is_running; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') 🟢 LM Studio is already running – skipping start."
-else
-    echo "$(date '+%Y-%m-%d %H:%M:%S') 🚀 Starting LM Studio GUI: $LMSTUDIO_APPIMAGE"
-    "$LMSTUDIO_APPIMAGE" &
-    if have notify-send; then
-        notify-send "LM Studio" "LM Studio is starting..." -i dialog-information || true
-    fi
+if have notify-send; then
+    notify-send "LM Studio" "LM Studio daemon is running" -i dialog-information || true
 fi
-
-echo "$(date '+%Y-%m-%d %H:%M:%S') 🔍 Waiting for LM Studio window..."
-SECONDS_WAITED=0
-WINDOW_ID=""
-
-if ! $IS_WAYLAND && have xdotool; then
-    while [ "$SECONDS_WAITED" -lt "$MAX_WAIT" ]; do
-        WINDOW_ID=$(xdotool search --onlyvisible --name "LM Studio" | head -n 1)
-        if [ -n "$WINDOW_ID" ]; then
-            echo "$(date '+%Y-%m-%d %H:%M:%S') ✅ Window found: $WINDOW_ID – minimizing..."
-            xdotool windowminimize "$WINDOW_ID" || true
-            break
-        fi
-        sleep "$INTERVAL"
-        SECONDS_WAITED=$((SECONDS_WAITED + INTERVAL))
-    done
-    if [ -z "$WINDOW_ID" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') ⚠️ Window not found – minimization skipped."
-    fi
-else
-    echo "$(date '+%Y-%m-%d %H:%M:%S') ℹ️ Window minimization skipped (Wayland or xdotool not available)."
-fi
-
-echo "$(date '+%Y-%m-%d %H:%M:%S') ⏳ Waiting 10 seconds for LM Studio to be ready..."
-sleep 10
 
 # === API server wait logic: wait until the HTTP API is reachable (stable) ===
 HTTP_CFG="$HOME/.lmstudio/.internal/http-server-config.json"
@@ -557,21 +557,7 @@ fi
 # === Load model if provided ===
 if [ -n "$MODEL" ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') 📦 Loading model: $MODEL ..."
-    SECONDS_WAITED=0
-    LMS_CMD=""
-    while [ "$SECONDS_WAITED" -lt "$WAIT_FOR_LMS" ]; do
-        if [ -x "$LMS_CLI" ]; then
-            LMS_CMD="$LMS_CLI"; break
-        elif have lms; then
-            LMS_CMD="$(command -v lms)"; break
-        fi
-        sleep 1; SECONDS_WAITED=$((SECONDS_WAITED + 1))
-    done
-
-    if [ -z "$LMS_CMD" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ lms-CLI not found after ${WAIT_FOR_LMS}s – skipping loading."
-        MODEL="failed-model"
-    else
+    if [ -n "$LMS_CMD" ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') 🔧 Using lms-CLI: $LMS_CMD"
         if ! "$LMS_CMD" ps </dev/null >/dev/null 2>&1; then
             sleep 1
@@ -609,6 +595,9 @@ if [ -n "$MODEL" ]; then
             echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ Model '$MODEL' could not be loaded – skipping."
             MODEL="failed-model"
         fi
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ lms-CLI not found – skipping loading."
+        MODEL="failed-model"
     fi
 else
     echo "$(date '+%Y-%m-%d %H:%M:%S') ℹ️ No model provided – skipping loading."

@@ -123,6 +123,49 @@ def is_llmster_running():
     except (OSError, subprocess.SubprocessError):
         return False
 
+
+def get_desktop_app_pids():
+    """Return PIDs of LM Studio desktop app root processes."""
+    pids = []
+    try:
+        result = subprocess.run(
+            ["ps", "-eo", "pid=,args="],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            return pids
+
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            parts = line.split(None, 1)
+            if len(parts) != 2:
+                continue
+
+            pid_text, args = parts
+            if not pid_text.isdigit():
+                continue
+
+            if "--type=" in args:
+                continue
+
+            if (
+                "/opt/LM Studio/lm-studio" in args
+                or args.startswith("/usr/bin/lm-studio")
+                or args.startswith("lm-studio ")
+                or args == "lm-studio"
+            ):
+                pids.append(int(pid_text))
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return []
+
+    return pids
+
 # === Terminate other instances of this script ===
 
 
@@ -338,24 +381,8 @@ class TrayIcon:
         # representing the desktop app (minimized to tray), so count it as app
         # running.
         try:
-            result = subprocess.run(
-                ["ps", "-eo", "args="],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False
-            )
-            if result.returncode == 0:
-                for args in result.stdout.splitlines():
-                    if "--type=" in args:
-                        continue
-                    if (
-                        "/opt/LM Studio/lm-studio" in args
-                        or args.startswith("/usr/bin/lm-studio")
-                        or args.startswith("lm-studio ")
-                        or args == "lm-studio"
-                    ):
-                        return "running"
+            if get_desktop_app_pids():
+                return "running"
         except (OSError, subprocess.SubprocessError):
             pass
 
@@ -423,6 +450,51 @@ class TrayIcon:
         """
         if not self.begin_action_cooldown("start_daemon"):
             return
+
+        # Stop desktop app first to avoid daemon/app conflict
+        if self.get_desktop_app_status() == "running":
+            desktop_pids = get_desktop_app_pids()
+            for pid in desktop_pids:
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except (OSError, ProcessLookupError, PermissionError):
+                    pass
+
+            for _ in range(8):
+                if self.get_desktop_app_status() != "running":
+                    break
+                time.sleep(0.25)
+
+            if self.get_desktop_app_status() == "running":
+                desktop_pids = get_desktop_app_pids()
+                for pid in desktop_pids:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except (OSError, ProcessLookupError, PermissionError):
+                        pass
+
+                for _ in range(8):
+                    if self.get_desktop_app_status() != "running":
+                        break
+                    time.sleep(0.25)
+
+            if self.get_desktop_app_status() == "running":
+                logging.error(
+                    "Cannot start daemon: desktop app is still running"
+                )
+                subprocess.run(
+                    [
+                        "notify-send",
+                        "Error",
+                        "Failed to stop desktop app. Please stop it first.",
+                    ],
+                    check=False,
+                )
+                self.build_menu()
+                return
+
+            logging.info("Desktop app stopped before daemon start")
+            self.build_menu()
 
         llmster_cmd = get_llmster_cmd()
         lms_cmd = get_lms_cmd()

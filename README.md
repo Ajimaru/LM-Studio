@@ -29,7 +29,48 @@ Automation scripts for LM Studio - a powerful desktop and server application for
 
 ## Getting Started
 
-After cloning the repository, follow these steps to set up the automation environment:
+For normal usage, install from the GitHub Releases page (recommended).
+
+### User Installation (from Release)
+
+1. Open the latest release:
+
+```text
+https://github.com/Ajimaru/LM-Studio-Tray-Manager/releases/latest
+```
+
+2. Download one of these artifacts:
+
+- `LM-Studio-Tray-Manager-latest.tar.gz`
+- `LM-Studio-Tray-Manager-latest.zip`
+
+3. Extract and enter the folder, then run setup.
+
+Example (`.tar.gz`):
+
+```bash
+tar -xzf LM-Studio-Tray-Manager-latest.tar.gz
+cd LM-Studio-Tray-Manager-vX.Y.Z
+./setup.sh
+```
+
+4. Start automation:
+
+```bash
+./lmstudio_autostart.sh
+```
+
+### Contributor Setup (Git Clone)
+
+Only use `git clone` if you want to contribute code, docs, or workflows:
+
+```bash
+git clone https://github.com/Ajimaru/LM-Studio-Tray-Manager.git
+cd LM-Studio-Tray-Manager
+./setup.sh
+```
+
+After setup, continue with the same runtime steps below.
 
 ### 1. Run the Setup Script
 
@@ -39,6 +80,8 @@ After cloning the repository, follow these steps to set up the automation enviro
 # Preview setup actions without changing system state
 ./setup.sh --dry-run
 ```
+
+If you installed from a release archive, run these commands inside the extracted release directory.
 
 This comprehensive setup script:
 

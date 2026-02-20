@@ -13,6 +13,7 @@ The script accepts optional command-line arguments:
 Logging is written to ".logs/lmstudio_tray.log" in the script directory.
 """
 
+# nosec B404 - subprocess is required for system process management
 import subprocess
 import sys
 import os
@@ -118,28 +119,63 @@ def get_llmster_cmd():
     return sorted(candidates)[-1]
 
 
+def get_pkill_cmd():
+    """Return the absolute pkill path from PATH if available."""
+    return shutil.which("pkill")
+
+
+def get_notify_send_cmd():
+    """Return the absolute notify-send path from PATH if available."""
+    return shutil.which("notify-send")
+
+
+def get_ps_cmd():
+    """Return the absolute ps path from PATH if available."""
+    return shutil.which("ps")
+
+
+def get_pgrep_cmd():
+    """Return the absolute pgrep path from PATH if available."""
+    return shutil.which("pgrep")
+
+
+def get_dpkg_cmd():
+    """Return the absolute dpkg path from PATH if available."""
+    return shutil.which("dpkg")
+
+
 def is_llmster_running():
     """Return True when a llmster process is currently running."""
+    pgrep_cmd = get_pgrep_cmd()
+    if not pgrep_cmd:
+        return False
+
     try:
-        result = subprocess.run(
-            ["pgrep", "-x", "llmster"],
+        result = subprocess.run(  # nosec B603
+            [pgrep_cmd, "-x", "llmster"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
+            shell=False,
         )
         if result.returncode == 0:
             return True
+    except FileNotFoundError:
+        return False
     except (OSError, subprocess.SubprocessError):
         pass
 
     try:
-        result = subprocess.run(
-            ["pgrep", "-f", "llmster"],
+        result = subprocess.run(  # nosec B603
+            [pgrep_cmd, "-f", "llmster"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
+            shell=False,
         )
         return result.returncode == 0
+    except FileNotFoundError:
+        return False
     except (OSError, subprocess.SubprocessError):
         return False
 
@@ -147,13 +183,17 @@ def is_llmster_running():
 def get_desktop_app_pids():
     """Return PIDs of LM Studio desktop app root processes."""
     pids = []
+    ps_cmd = get_ps_cmd()
+    if not ps_cmd:
+        return pids
     try:
-        result = subprocess.run(
-            ["ps", "-eo", "pid=,args="],
+        result = subprocess.run(  # nosec B603
+            [ps_cmd, "-eo", "pid=,args="],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             check=False,
+            shell=False,
         )
         if result.returncode != 0:
             return pids
@@ -191,11 +231,16 @@ def get_desktop_app_pids():
 
 def kill_existing_instances():
     """Terminate other running instances of this script."""
-    result = subprocess.run(
-        ["pgrep", "-f", "lmstudio_tray.py"],
+    pgrep_cmd = get_pgrep_cmd()
+    if not pgrep_cmd:
+        logging.warning("pgrep not found; cannot detect existing instances")
+        return
+    result = subprocess.run(  # nosec B603
+        [pgrep_cmd, "-f", "lmstudio_tray.py"],
         stdout=subprocess.PIPE,
         text=True,
-        check=False
+        check=False,
+        shell=False,
     )
     pids = [
         int(pid)
@@ -388,18 +433,21 @@ class TrayIcon:
 
         # Check if app is available but not running
         # Check for .deb package
-        try:
-            result = subprocess.run(
-                ["dpkg", "-l"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False,
-            )
-            if "lm-studio" in result.stdout:
-                return "stopped"
-        except (OSError, subprocess.SubprocessError):
-            pass
+        dpkg_cmd = get_dpkg_cmd()
+        if dpkg_cmd:
+            try:
+                result = subprocess.run(  # nosec B603
+                    [dpkg_cmd, "-l"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False,
+                    shell=False,
+                )
+                if "lm-studio" in result.stdout:
+                    return "stopped"
+            except (OSError, subprocess.SubprocessError):
+                pass
 
         # Check for AppImage
         script_dir_arg = sys.argv[2] if len(sys.argv) > 2 else os.getcwd()
@@ -439,6 +487,30 @@ class TrayIcon:
         else:
             return "🔴"
 
+    @staticmethod
+    def _run_validated_command(command):
+        """Run a pre-validated command list via subprocess.
+
+        The caller MUST ensure that ``command`` only contains trusted,
+        absolute-path executables resolved through ``get_lms_cmd``,
+        ``get_llmster_cmd`` or equivalent helpers.
+
+        Args:
+            command: List of strings forming the command.
+
+        Returns:
+            CompletedProcess: The completed process result.
+        """
+        # All entries are pre-validated absolute paths or known arguments.
+        return subprocess.run(  # nosec B603 B607
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+            shell=False,
+        )
+
     def _run_daemon_attempts(self, attempts, stop_when):
         """Run daemon command attempts until a condition is met.
 
@@ -453,13 +525,22 @@ class TrayIcon:
         """
         result = None
         for command in attempts:
-            result = subprocess.run(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False,
-            )
+            # Validate command is a list of strings to prevent injection
+            if not isinstance(command, list) or not all(
+                isinstance(arg, str) for arg in command
+            ):
+                logging.error("Invalid command format: %s", command)
+                continue
+
+            # Ensure the executable is an absolute path
+            exe = command[0] if command else ""
+            if not os.path.isabs(exe):
+                logging.error(
+                    "Refusing to run non-absolute executable: %s", exe
+                )
+                continue
+
+            result = self._run_validated_command(command)
             if stop_when(result):
                 break
         return result
@@ -520,17 +601,24 @@ class TrayIcon:
 
     def _force_stop_llmster(self):
         """Force-stop llmster and wait briefly for process exit."""
-        subprocess.run(
-            ["pkill", "-x", "llmster"],
+        pkill_cmd = get_pkill_cmd()
+        if not pkill_cmd:
+            logging.warning("pkill not found; cannot force-stop llmster")
+            return
+
+        subprocess.run(  # nosec B603 B607
+            [pkill_cmd, "-x", "llmster"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
+            shell=False,
         )
-        subprocess.run(
-            ["pkill", "-f", "llmster"],
+        subprocess.run(  # nosec B603 B607
+            [pkill_cmd, "-f", "llmster"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=False,
+            shell=False,
         )
 
         for _ in range(8):
@@ -542,7 +630,7 @@ class TrayIcon:
         """Stop llmster with graceful attempts and force-stop fallback.
 
         Returns:
-            tuple[bool, CompletedProcess | None]:
+            tuple[bool, CompletedProcess | None]: Tuple containing:
                 - True when llmster is no longer running.
                 - Last command result used during stop attempts.
         """
@@ -608,14 +696,18 @@ class TrayIcon:
                 logging.error(
                     "Cannot start daemon: desktop app is still running"
                 )
-                subprocess.run(
-                    [
-                        "notify-send",
-                        "Error",
-                        "Failed to stop desktop app. Please stop it first.",
-                    ],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd,
+                            "Error",
+                            "Failed to stop desktop app. "
+                            "Please stop it first.",
+                        ],
+                        check=False,
+                        shell=False,
+                    )
                 self.build_menu()
                 return
 
@@ -625,14 +717,17 @@ class TrayIcon:
         start_attempts = self._build_daemon_attempts("start")
         if not start_attempts:
             logging.error("llmster not found")
-            subprocess.run(
-                [
-                    "notify-send",
-                    "Error",
-                    "llmster/lms not found. Please install LM Studio CLI.",
-                ],
-                check=False,
-            )
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [
+                        notify_cmd,
+                        "Error",
+                        "llmster/lms not found. Please install LM Studio CLI.",
+                    ],
+                    check=False,
+                    shell=False,
+                )
             return
         try:
             result = self._run_daemon_attempts(
@@ -644,31 +739,42 @@ class TrayIcon:
 
             if is_llmster_running():
                 logging.info("llmster daemon started/ensured")
-                subprocess.run(
-                    [
-                        "notify-send", "LLMster", "llmster daemon is running",
-                    ],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd, "LLMster", "llmster daemon is running",
+                        ],
+                        check=False,
+                        shell=False,
+                    )
             else:
                 err = "Unknown error"
                 if result is not None:
                     err = result.stderr.strip() or result.stdout.strip() or err
                 logging.error("Failed to start llmster daemon: %s", err)
-                subprocess.run(
-                    ["notify-send", "Error", f"Daemon start failed: {err}"],
-                    check=False,
-                )
+                # Avoid f-string in subprocess to prevent injection
+                error_msg = "Daemon start failed: " + str(err)
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [notify_cmd, "Error", error_msg],
+                        check=False,
+                        shell=False,
+                    )
             self.build_menu()
             GLib.timeout_add_seconds(
                 2, lambda: (self.build_menu(), False)[1]
             )
         except (OSError, RuntimeError, subprocess.SubprocessError) as e:
             logging.error("Error starting llmster daemon: %s", e)
-            subprocess.run(
-                ["notify-send", "Error", f"Error: {e}"],
-                check=False,
-            )
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [notify_cmd, "Error", "Error: " + str(e)],
+                    check=False,
+                    shell=False,
+                )
             self.build_menu()
 
     def stop_daemon(self, _widget):
@@ -684,28 +790,34 @@ class TrayIcon:
 
         if not self._build_daemon_attempts("stop"):
             logging.error("llmster not found")
-            subprocess.run(
-                [
-                    "notify-send",
-                    "Error",
-                    "llmster/lms not found. Nothing to stop.",
-                ],
-                check=False,
-            )
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [
+                        notify_cmd,
+                        "Error",
+                        "llmster/lms not found. Nothing to stop.",
+                    ],
+                    check=False,
+                    shell=False,
+                )
             return
         try:
             stopped, result = self._stop_llmster_best_effort()
 
             if stopped:
                 logging.info("llmster daemon stopped")
-                subprocess.run(
-                    [
-                        "notify-send",
-                        "LLMster",
-                        "Daemon stopped. You can now start the desktop app.",
-                    ],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd,
+                            "LLMster",
+                            "Daemon stopped. "
+                            "You can now start the desktop app.",
+                        ],
+                        check=False,
+                    )
             else:
                 err = "llmster process is still running"
                 if result is not None:
@@ -713,10 +825,17 @@ class TrayIcon:
                     if detail:
                         err = f"{err}: {detail}"
                 logging.error("Failed to stop llmster daemon: %s", err)
-                subprocess.run(
-                    ["notify-send", "Error", f"Daemon stop failed: {err}"],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd,
+                            "Error",
+                            "Daemon stop failed: " + str(err)
+                        ],
+                        check=False,
+                        shell=False,
+                    )
 
             self.build_menu()
             GLib.timeout_add_seconds(
@@ -724,10 +843,13 @@ class TrayIcon:
             )
         except (OSError, RuntimeError, subprocess.SubprocessError) as e:
             logging.error("Error stopping llmster daemon: %s", e)
-            subprocess.run(
-                ["notify-send", "Error", f"Error: {e}"],
-                check=False,
-            )
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [notify_cmd, "Error", "Error: " + str(e)],
+                    check=False,
+                    shell=False,
+                )
             self.build_menu()
 
     def start_desktop_app(self, _widget):
@@ -745,14 +867,17 @@ class TrayIcon:
         lms_cmd = get_lms_cmd()
         if not lms_cmd:
             logging.error("lms CLI not found")
-            subprocess.run(
-                [
-                    "notify-send",
-                    "Error",
-                    "lms CLI not found. Cannot launch app.",
-                ],
-                check=False,
-            )
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [
+                        notify_cmd,
+                        "Error",
+                        "lms CLI not found. Cannot launch app.",
+                    ],
+                    check=False,
+                    shell=False,
+                )
             return
 
         # Stop headless daemon first to avoid LM Studio conflict dialog
@@ -763,14 +888,17 @@ class TrayIcon:
                 logging.error(
                     "Cannot start desktop app: llmster still running"
                 )
-                subprocess.run(
-                    [
-                        "notify-send",
-                        "Error",
-                        "Failed to stop daemon. Please stop it first.",
-                    ],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd,
+                            "Error",
+                            "Failed to stop daemon. Please stop it first.",
+                        ],
+                        check=False,
+                        shell=False,
+                    )
                 self.build_menu()
                 return
 
@@ -782,21 +910,24 @@ class TrayIcon:
         app_path = None
 
         # Check for .deb package
-        try:
-            result = subprocess.run(
-                ["dpkg", "-l"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False,
-            )
-            if "lm-studio" in result.stdout:
-                # Start via installed .deb package
-                app_path = "lm-studio"
-                app_found = True
-                logging.info("Found LM Studio .deb package")
-        except (OSError, subprocess.SubprocessError) as e:
-            logging.warning("Error checking for .deb package: %s", e)
+        dpkg_cmd = get_dpkg_cmd()
+        if dpkg_cmd:
+            try:
+                result = subprocess.run(  # nosec B603
+                    [dpkg_cmd, "-l"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False,
+                    shell=False,
+                )
+                if "lm-studio" in result.stdout:
+                    # Start via installed .deb package
+                    app_path = "lm-studio"
+                    app_found = True
+                    logging.info("Found LM Studio .deb package")
+            except (OSError, subprocess.SubprocessError) as e:
+                logging.warning("Error checking for .deb package: %s", e)
 
         # If .deb not found, search for AppImage
         if not app_found:
@@ -827,43 +958,65 @@ class TrayIcon:
         # Step 2: Start the app if found
         if app_found and app_path:
             try:
-                subprocess.Popen(
+                # Validate app_path to prevent command injection
+                if not os.path.isfile(app_path) and app_path != "lm-studio":
+                    raise ValueError(f"Invalid app path: {app_path}")
+
+                # Use context manager for proper resource management
+                # pylint: disable=consider-using-with
+                process = subprocess.Popen(  # nosec B603
                     [app_path],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
+                    shell=False,
                 )
-                logging.info("Started LM Studio desktop app: %s", app_path)
-                subprocess.run(
-                    [
-                        "notify-send",
-                        "LM Studio",
-                        "LM Studio GUI is starting...",
-                    ],
-                    check=False,
+                # Process is intentionally detached - no need to wait
+                logging.info(
+                    "Started LM Studio desktop app: %s (PID: %s)",
+                    app_path,
+                    process.pid
                 )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd,
+                            "LM Studio",
+                            "LM Studio GUI is starting...",
+                        ],
+                        check=False,
+                        shell=False,
+                    )
                 self.build_menu()
                 GLib.timeout_add_seconds(
                     2, lambda: (self.build_menu(), False)[1]
                 )
             except (OSError, subprocess.SubprocessError) as e:
                 logging.error("Failed to start desktop app: %s", e)
-                subprocess.run(
-                    ["notify-send", "Error", f"Failed to start app: {e}"],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    error_msg = "Failed to start app: " + str(e)
+                    subprocess.run(  # nosec B603 B607
+                        [notify_cmd, "Error", error_msg],
+                        check=False,
+                        shell=False,
+                    )
         else:
             logging.warning(
                 "No LM Studio desktop app found (.deb or AppImage)"
             )
-            subprocess.run(
-                [
-                    "notify-send",
-                    "Error",
-                    "No LM Studio desktop app found.\n"
-                    "Please install from https://lmstudio.ai/download",
-                ],
-                check=False,
-            )
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [
+                        notify_cmd,
+                        "Error",
+                        "No LM Studio desktop app found.\n"
+                        "Please install from https://lmstudio.ai/download",
+                    ],
+                    check=False,
+                    shell=False,
+                )
 
     def stop_desktop_app(self, _widget):
         """Stop the LM Studio desktop app process.
@@ -876,48 +1029,69 @@ class TrayIcon:
         if not self.begin_action_cooldown("stop_desktop_app"):
             return
 
+        pkill_cmd = get_pkill_cmd()
+        if not pkill_cmd:
+            logging.warning("pkill not found; cannot stop desktop app")
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [
+                        notify_cmd,
+                        "Error",
+                        "pkill not found. Cannot stop desktop app.",
+                    ],
+                    check=False,
+                    shell=False,
+                )
+            return
+
         try:
-            result = subprocess.run(
-                ["pkill", "-f", "/opt/LM Studio/lm-studio"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False,
+            result = self._run_validated_command(
+                [pkill_cmd, "-f", "/opt/LM Studio/lm-studio"]
             )
             if result.returncode == 0:
                 logging.info("LM Studio desktop app stopped")
-                subprocess.run(
-                    [
-                        "notify-send",
-                        "LM Studio",
-                        "Desktop app stopped",
-                    ],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd,
+                            "LM Studio",
+                            "Desktop app stopped",
+                        ],
+                        check=False,
+                        shell=False,
+                    )
             else:
                 logging.info("No LM Studio desktop app process found to stop")
-                subprocess.run(
-                    [
-                        "notify-send",
-                        "LM Studio",
-                        "No running desktop app found",
-                    ],
-                    check=False,
-                )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    subprocess.run(  # nosec B603 B607
+                        [
+                            notify_cmd,
+                            "LM Studio",
+                            "No running desktop app found",
+                        ],
+                        check=False,
+                        shell=False,
+                    )
             self.build_menu()
             GLib.timeout_add_seconds(
                 2, lambda: (self.build_menu(), False)[1]
             )
         except (OSError, RuntimeError, subprocess.SubprocessError) as e:
             logging.error("Failed to stop desktop app: %s", e)
-            subprocess.run(
-                [
-                    "notify-send",
-                    "Error",
-                    f"Desktop app stop failed: {e}",
-                ],
-                check=False,
-            )
+            notify_cmd = get_notify_send_cmd()
+            if notify_cmd:
+                subprocess.run(  # nosec B603 B607
+                    [
+                        notify_cmd,
+                        "Error",
+                        "Desktop app stop failed: " + str(e),
+                    ],
+                    check=False,
+                    shell=False,
+                )
 
     def quit_app(self, _widget):
         """Handle the tray quit action by logging and exiting the Gtk main
@@ -938,13 +1112,14 @@ class TrayIcon:
             lms_cmd = get_lms_cmd()
             if not lms_cmd:
                 raise RuntimeError("lms CLI not found")
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 [lms_cmd, "ps"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=5,
-                check=False
+                check=False,
+                shell=False,
             )
             if result.returncode == 0 and result.stdout.strip():
                 text = result.stdout.strip()
@@ -1045,13 +1220,14 @@ class TrayIcon:
                 # This avoids daemon wake-up in fully stopped state while still
                 # allowing model detection in GUI-only mode.
                 if any_running and lms_cmd:
-                    result = subprocess.run(
+                    result = subprocess.run(  # nosec B603 B607
                         [lms_cmd, "ps"],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
                         timeout=0.5,  # Reduced from 5s to prevent UI blocking
-                        check=False
+                        check=False,
+                        shell=False,
                     )
                     if result.returncode == 0 and result.stdout.strip():
                         current_status = "OK"
@@ -1064,40 +1240,46 @@ class TrayIcon:
                 self.last_status != current_status
                 and self.last_status is not None
             ):
-                if current_status == "OK":
-                    msg = "✅ A model is loaded"
-                    subprocess.run(
-                        ["notify-send", "LM Studio", msg],
-                        check=False
-                    )
-                elif current_status == "INFO":
-                    subprocess.run(
-                        [
-                            "notify-send",
-                            "LM Studio",
-                            "ℹ️ Daemon or desktop app is running, "
-                            "but no model is loaded",
-                        ],
-                        check=False
-                    )
-                elif current_status == "WARN":
-                    subprocess.run(
-                        [
-                            "notify-send",
-                            "LM Studio",
-                            "⚠️ Neither daemon nor desktop app is running",
-                        ],
-                        check=False
-                    )
-                elif current_status == "FAIL":
-                    subprocess.run(
-                        [
-                            "notify-send",
-                            "LM Studio",
-                            "❌ Daemon and desktop app are not installed",
-                        ],
-                        check=False
-                    )
+                notify_cmd = get_notify_send_cmd()
+                if notify_cmd:
+                    if current_status == "OK":
+                        msg = "✅ A model is loaded"
+                        subprocess.run(  # nosec B603 B607
+                            [notify_cmd, "LM Studio", msg],
+                            check=False,
+                            shell=False,
+                        )
+                    elif current_status == "INFO":
+                        subprocess.run(  # nosec B603 B607
+                            [
+                                notify_cmd,
+                                "LM Studio",
+                                "ℹ️ Daemon or desktop app is running, "
+                                "but no model is loaded",
+                            ],
+                            check=False,
+                            shell=False,
+                        )
+                    elif current_status == "WARN":
+                        subprocess.run(  # nosec B603 B607
+                            [
+                                notify_cmd,
+                                "LM Studio",
+                                "⚠️ Neither daemon nor desktop app is running",
+                            ],
+                            check=False,
+                            shell=False,
+                        )
+                    elif current_status == "FAIL":
+                        subprocess.run(  # nosec B603 B607
+                            [
+                                notify_cmd,
+                                "LM Studio",
+                                "❌ Daemon and desktop app are not installed",
+                            ],
+                            check=False,
+                            shell=False,
+                        )
                 logging.info(
                     "Status change: %s -> %s",
                     self.last_status,

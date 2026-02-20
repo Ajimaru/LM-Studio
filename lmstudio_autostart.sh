@@ -527,7 +527,7 @@ resolve_model_arg() {
         base="$(basename "$input")"
         local out rc
         set +e
-        out="$($lmscmd ls 2>/dev/null)"; rc=$?
+        out="$("$lmscmd" ls 2>/dev/null)"; rc=$?
         set -e
         if [ $rc -eq 0 ] && [ -n "$out" ]; then
             local line id
@@ -557,7 +557,7 @@ ensure_model_registered() {
     local base out line id rc
     base="$(basename "$path")"
     set +e
-    out="$($lmscmd ls 2>/dev/null)"; rc=$?
+    out="$("$lmscmd" ls 2>/dev/null)"; rc=$?
     set -e
     if [ $rc -eq 0 ] && [ -n "$out" ]; then
         line="$(printf '%s\n' "$out" | grep -F "$base" | head -n 1)"
@@ -596,7 +596,7 @@ ensure_model_registered() {
     if printf 'y\n' | "$lmscmd" import --symbolic-link "$path" >/dev/null 2>&1; then
         sleep 1
         set +e
-        out="$($lmscmd ls 2>/dev/null)"; rc=$?
+        out="$("$lmscmd" ls 2>/dev/null)"; rc=$?
         set -e
         if [ $rc -eq 0 ] && [ -n "$out" ]; then
             line="$(printf '%s\n' "$out" | grep -F "$base" | head -n 1)"

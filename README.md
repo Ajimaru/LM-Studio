@@ -49,7 +49,7 @@ For detailed documentation, usage examples, and flow diagrams, see the [comprehe
 
 ## License
 
-[Check repository for license information]
+MIT License – See [LICENSE](LICENSE) file for details
 
 ---
 

@@ -224,6 +224,7 @@ class TrayIcon:
     desktop notifications on status transitions.
     """
     def __init__(self):
+        """Initialize tray indicator, menu, and periodic status checks."""
         # Use AppIndicator3 instead of deprecated StatusIcon
         self.indicator = AppIndicator3.Indicator.new(
             "lmstudio-monitor",

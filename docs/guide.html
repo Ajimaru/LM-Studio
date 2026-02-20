@@ -269,7 +269,7 @@ grep -i error .logs/*.log</code></pre>
             Options:
                 -d, --debug       Enable debug output and Bash trace
                 -h, --help        Show help and exit
-                -L, --list-models List local models (interactive selection in TTY)
+                -L, --list-models List local models (interactive selection in TTY, then load selected model)
                 -m, --model NAME  Load specified model (empty NAME loads no model)
                 -g, --gui          Start the LM Studio GUI (stops daemon first)
 
@@ -450,7 +450,7 @@ EOF</code></pre>
 
             <h3>Interactive Model Selection</h3>
             <pre><code>./lmstudio_autostart.sh --list-models</code></pre>
-            <p>In TTY mode, allows interactive selection of local models.</p>
+            <p>In TTY mode, allows interactive selection of local models and then loads the selected model into the daemon.</p>
 
             <h3>Debug Mode</h3>
             <pre><code>./lmstudio_autostart.sh --debug</code></pre>

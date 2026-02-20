@@ -195,7 +195,7 @@ export LM_AUTOSTART_DEBUG=1
 
 # Set model selection timeout (seconds)
 export LM_AUTOSTART_SELECT_TIMEOUT=60
-./lmstudio_autostart.sh -L  # Interactive model selection
+./lmstudio_autostart.sh -L  # Interactive model selection + loads selected model in daemon mode
 
 ```
 

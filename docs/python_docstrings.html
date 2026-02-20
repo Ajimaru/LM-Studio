@@ -112,6 +112,7 @@
             <li><a href="#functions">Top-level Functions</a></li>
             <li><a href="#trayicon">Class TrayIcon</a></li>
             <li><a href="#methods">TrayIcon Methods</a></li>
+            <li><a href="#test-docstrings">Test Module Docstrings</a></li>
         </ul>
         <p class="muted"><a href="index.html">← Back to main docs</a></p>
     </nav>
@@ -302,6 +303,90 @@ non-None state, and logs status changes and errors.
 Returns:
     bool: True to indicate the check completed (used for scheduled
     callbacks).</pre>
+        </section>
+
+        <section id="test-docstrings">
+            <h2>Test Module <code>tests/test_lmstudio_tray.py</code></h2>
+            <p>Docstrings from the pytest module are documented here for helper classes, fixtures, and test cases.</p>
+
+            <h3>Module Docstring</h3>
+            <pre>Test suite for lmstudio_tray.py system tray application.
+
+This module contains comprehensive tests for the LM Studio system tray
+application, including tests for:
+- Daemon management (start/stop)
+- Desktop application lifecycle
+- Status monitoring and indicators
+- Menu building and interaction
+- Command resolution and execution
+- Error handling and edge cases
+
+The tests use mocked GTK, AppIndicator, and GLib components to avoid requiring
+a display server or actual system dependencies during test execution.</pre>
+
+            <h3>Helper Class Docstrings</h3>
+            <pre>DummyMenu: Dummy menu used by tests.
+DummyMenuItem: Dummy menu item used by tests.
+DummySeparatorMenuItem: A dummy separator menu item for testing purposes.
+DummyMessageDialog: Dummy message dialog to capture interactions.
+DummyIndicator: Dummy indicator capturing status and menu updates.
+DummyAppIndicatorModule: Mock AppIndicator3 module for testing purposes.
+DummyGtkModule: Mock GTK module for testing purposes.
+DummyGLibModule: A dummy GLib module for testing purposes.</pre>
+
+            <h3>Top-level Helper &amp; Fixture Docstrings</h3>
+            <pre>_completed(): Create a subprocess-like completed result object.
+tray_module_fixture(): Import lmstudio_tray with mocked GI/GTK dependencies.
+_make_tray_instance(): Build a partially initialized TrayIcon for unit tests.
+_call_member(): Call a member by name to avoid direct protected-member access.</pre>
+
+            <h3>Test Function Docstrings</h3>
+            <pre>test_get_app_version_reads_file(): Read version string from a VERSION file.
+test_get_app_version_fallback_default(): Fall back to default version when file is absent.
+test_get_lms_cmd_prefers_lms_cli(): Prefer bundled LMS_CLI path when executable.
+test_get_lms_cmd_fallback_to_which(): Resolve lms command from PATH when bundled binary is unavailable.
+test_get_llmster_cmd_from_which(): Return llmster executable found on PATH.
+test_get_llmster_cmd_from_directory_scan(): Pick latest discovered llmster binary from install directories.
+test_is_llmster_running_true_first_check(): Report running when first pgrep call succeeds.
+test_is_llmster_running_true_second_check(): Report running when second fallback pgrep succeeds.
+test_get_desktop_app_pids_parsing(): Parse desktop app root process IDs from ps output.
+test_kill_existing_instances_ignores_current_pid(): Terminate only stale tray process IDs.
+test_begin_action_cooldown(): Throttle repeated actions within cooldown window.
+test_get_status_indicator(): Map status strings to indicator symbols.
+test_build_daemon_attempts_start_and_stop(): Build expected daemon start and stop command variants.
+test_run_daemon_attempts_stops_on_condition(): Stop command iteration once stop condition is met.
+test_stop_llmster_best_effort_with_force(): Force-stop llmster when graceful stop does not finish.
+test_stop_desktop_app_processes_success(): Stop desktop app processes using SIGTERM path.
+test_start_daemon_missing_binaries_notifies(): Notify user when daemon binaries are unavailable.
+test_stop_daemon_success_path(): Notify user when daemon stop succeeds.
+test_start_desktop_app_missing_lms(): Notify user when lms CLI is missing.
+test_start_desktop_app_appimage_found_and_started(): Launch desktop app when AppImage is discovered.
+test_stop_desktop_app_no_process_path(): Handle desktop stop request when no process is running.
+test_show_status_dialog_success(): Render status dialog with lms output.
+test_show_about_dialog_contains_version_and_repo(): Show about dialog including version and repository metadata.
+test_check_model_fail_warn_info_ok(): Cover FAIL/WARN/INFO/OK icon and transition handling.
+test_build_menu_running_entries(): Build menu entries for running daemon and desktop app.
+test_build_menu_not_found_entries(): Build menu entries for missing daemon and desktop app.
+test_get_daemon_status_variants(): Return daemon status for missing, running, and stopped cases.
+test_get_desktop_app_status_variants(): Return desktop app status for running and installed variants.
+test_force_stop_llmster(): Issue force-stop commands for llmster.
+test_stop_desktop_app_processes_force_kill_path(): Escalate to SIGKILL when desktop app ignores SIGTERM.
+test_start_daemon_success_after_stopping_app(): Start daemon successfully after stopping desktop app.
+test_start_daemon_exception_path(): Handle unexpected exception while starting daemon.
+test_stop_daemon_failure_detail_path(): Include subprocess detail when daemon stop fails.
+test_stop_daemon_exception_path(): Handle unexpected exception while stopping daemon.
+test_start_desktop_app_daemon_stop_fails(): Abort desktop start when daemon cannot be stopped.
+test_start_desktop_app_not_found_path(): Notify user when no desktop installation is found.
+test_start_desktop_app_popen_failure(): Handle Popen failure when launching desktop app.
+test_stop_desktop_app_exception_path(): Handle exception while stopping desktop app.
+test_show_status_dialog_error_path(): Render status dialog with an error message when lms is missing.
+test_check_model_timeout_and_exception_paths(): Keep check_model stable on timeout and subprocess errors.
+test_start_daemon_fails_when_desktop_cannot_stop(): Abort daemon start when desktop app fails to stop.
+test_debug_mode_import_enables_warning_capture(): Enable warning capture when module is imported in debug mode.
+test_trayicon_constructor_sets_indicator_and_timer(): Initialize tray indicator properties and periodic timer.
+test_get_llmster_cmd_permission_error_and_no_candidates(): Return None when llmster directory scan fails or finds no binaries.
+test_is_llmster_running_first_probe_match(): Return running when first process probe succeeds.
+test_is_llmster_running_second_probe_error(): Return not running when fallback probe raises subprocess error.</pre>
         </section>
     </main>
 </body>

@@ -101,6 +101,19 @@ EOF
 }
 
 # === List local models (without starting LM Studio) ===
+model_label_from_path() {
+    local path="$1"
+    local base parent grand
+    base="$(basename "$path")"
+    if [ "$base" = "manifest.json" ]; then
+        parent="$(basename "$(dirname "$path")")"
+        grand="$(basename "$(dirname "$(dirname "$path")")")"
+        printf '%s/%s\n' "$grand" "$parent"
+        return 0
+    fi
+    printf '%s\n' "$base"
+}
+
 list_models() {
     echo "Local models (without starting LM Studio):"
     local found=0
@@ -131,6 +144,7 @@ list_models() {
         "$HOME/.cache/lm-studio"
         "$HOME/.cache/LM-Studio"
         "$HOME/.lmstudio/models"
+        "$HOME/.lmstudio/hub/models"
         "$HOME/LM Studio/models"
         "$SCRIPT_DIR/models"
     )
@@ -138,12 +152,12 @@ list_models() {
         [ -d "$dir" ] || continue
         local -a files=()
         set +e
-        mapfile -t files < <(find "$dir" -maxdepth 6 -type f \( -iname "*.gguf" -o -iname "*.bin" -o -iname "*.safetensors" \) 2>/dev/null)
+        mapfile -t files < <(find "$dir" -maxdepth 6 -type f \( -iname "*.gguf" -o -iname "*.bin" -o -iname "*.safetensors" -o -iname "manifest.json" \) 2>/dev/null)
         set -e
         if [ ${#files[@]} -gt 0 ]; then
             echo "Source: $dir"
             for f in "${files[@]}"; do
-                echo " - $(basename "$f")  [$f]"
+                echo " - $(model_label_from_path "$f")  [$f]"
             done
             found=1
         fi
@@ -218,6 +232,7 @@ if [ "$LIST_MODELS" = "1" ]; then
             "$HOME/.cache/lm-studio"
             "$HOME/.cache/LM-Studio"
             "$HOME/.lmstudio/models"
+            "$HOME/.lmstudio/hub/models"
             "$HOME/LM Studio/models"
             "$SCRIPT_DIR/models"
         )
@@ -226,7 +241,7 @@ if [ "$LIST_MODELS" = "1" ]; then
             [ -d "$d" ] || continue
             while IFS= read -r f; do
                 MAPFILE_ARR+=("$f")
-            done < <(find "$d" -maxdepth 6 -type f \( -iname "*.gguf" -o -iname "*.bin" -o -iname "*.safetensors" \) 2>/dev/null)
+            done < <(find "$d" -maxdepth 6 -type f \( -iname "*.gguf" -o -iname "*.bin" -o -iname "*.safetensors" -o -iname "manifest.json" \) 2>/dev/null)
         done
 
         if [ ${#MAPFILE_ARR[@]} -eq 0 ]; then
@@ -257,7 +272,7 @@ if [ "$LIST_MODELS" = "1" ]; then
             echo "Found models:";
             i=1
             for f in "${MAPFILE_ARR[@]}"; do
-                echo "  $i) $(basename "$f")"; i=$((i+1))
+                echo "  $i) $(model_label_from_path "$f")"; i=$((i+1))
             done
             echo "  s) Skip (do not load model)"
             echo "  q) Quit (terminate script)"
@@ -279,14 +294,12 @@ if [ "$LIST_MODELS" = "1" ]; then
                 if [[ "${pick,,}" == "s" ]]; then echo "No model will be loaded."; break; fi
                 if [[ "$pick" =~ ^[0-9]+$ ]] && [ "$pick" -ge 1 ] && [ "$pick" -le ${#MAPFILE_ARR[@]} ]; then
                     CHOSEN="${MAPFILE_ARR[$((pick-1))]}"
-                    echo "Selected: $CHOSEN"
+                    CHOSEN_LABEL="$(model_label_from_path "$CHOSEN")"
+                    echo "Selected: $CHOSEN_LABEL"
                     if [ "$MODEL_EXPLICIT" -eq 0 ]; then
-                        MODEL="$CHOSEN"
+                        MODEL="$CHOSEN_LABEL"
                         if [ "$DEBUG_FLAG" = "1" ] || [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
-                            base_name="$(basename "$CHOSEN")";
-                            parent_dir="$(basename "$(dirname "$CHOSEN")")";
-                            grand_dir="$(basename "$(dirname "$(dirname "$CHOSEN")")")";
-                            echo "[DEBUG] Selected file: $CHOSEN (id candidate: $grand_dir/$parent_dir/$base_name)"
+                            echo "[DEBUG] Selected file: $CHOSEN (label: $CHOSEN_LABEL)"
                         fi
                     else
                         echo "Note: --model was already set and takes precedence; selection is ignored." >&2
@@ -605,6 +618,43 @@ ensure_model_registered() {
     printf '%s\n' "$path"
 }
 
+load_model_into_daemon() {
+    local model_input="$1"
+    [ -n "$model_input" ] || return 0
+
+    local lmscmd
+    lmscmd="$(get_lms_cmd || true)"
+    if [ -z "$lmscmd" ]; then
+        echo "[WARN] Cannot load model '$model_input': lms CLI not found." >&2
+        return 1
+    fi
+
+    local model_key
+    model_key="$(resolve_model_arg "$model_input" "$lmscmd")"
+    model_key="$(ensure_model_registered "$model_key" "$lmscmd")"
+
+    if [ "$DEBUG_FLAG" = "1" ] || [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
+        echo "[DEBUG] Loading model into daemon: input='$model_input' key='$model_key'" >&2
+    fi
+
+    set +e
+    "$lmscmd" load --yes --local "$model_key" >/dev/null 2>&1
+    local rc=$?
+    if [ $rc -ne 0 ]; then
+        "$lmscmd" load --yes "$model_key" >/dev/null 2>&1
+        rc=$?
+    fi
+    set -e
+
+    if [ $rc -eq 0 ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') ✅ Model loaded: $model_key"
+        return 0
+    fi
+
+    echo "$(date '+%Y-%m-%d %H:%M:%S') ⚠️ Model load failed: $model_key" >&2
+    return 1
+}
+
 if [ "$GUI_FLAG" -eq 1 ]; then
     # GUI mode: start desktop app + tray monitor
     if is_llmster_running; then
@@ -634,6 +684,7 @@ else
     echo "$(date '+%Y-%m-%d %H:%M:%S') ℹ️ Use --gui to stop llmster and start LM Studio desktop app."
 
     if [ -n "$MODEL" ]; then
+        load_model_into_daemon "$MODEL" || true
         echo "$(date '+%Y-%m-%d %H:%M:%S') ℹ️ Model label '$MODEL' will be monitored in tray."
         TRAY_MODEL="$MODEL"
     else

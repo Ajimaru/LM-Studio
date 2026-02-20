@@ -5,9 +5,10 @@
 ---
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/downloads/)
-[![LM Studio App](https://img.shields.io/badge/LM_Studio_App-v0.4.3+-green.svg)](https://lmstudio.ai/download)
+[![Python 3.10](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/downloads/)
+[![LM Studio App v0.4.3+](https://img.shields.io/badge/LM_Studio_App-v0.4.3+-green.svg)](https://lmstudio.ai/download)
 [![LM Studio Daemon v0.0.3+](https://img.shields.io/badge/LM_Studio_Daemon-v0.0.3+-green.svg)](https://lmstudio.ai)
+[![Downloads](https://img.shields.io/github/downloads/Ajimaru/LM-Studio-Tray-Manager/total.svg)](https://github.com/Ajimaru/LM-Studio-Tray-Manager/releases)
 [![CI](https://github.com/Ajimaru/LM-Studio-Tray-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Ajimaru/LM-Studio-Tray-Manager/actions/workflows/ci.yml)
 [![Docs](https://github.com/Ajimaru/LM-Studio-Tray-Manager/actions/workflows/docs.yml/badge.svg)](https://github.com/Ajimaru/LM-Studio-Tray-Manager/actions/workflows/docs.yml)
 [![Security](https://github.com/Ajimaru/LM-Studio-Tray-Manager/actions/workflows/security.yml/badge.svg)](https://github.com/Ajimaru/LM-Studio-Tray-Manager/actions/workflows/security.yml)
@@ -23,7 +24,7 @@ Automation scripts for LM Studio - a powerful desktop and server application for
 - **🎛️ Tray Menu Controls**: Start/stop daemon and start/stop desktop app, including conflict-safe switching between both modes
 - **🚦 Icon Status Schema**: `❌` not installed, `⚠️` both stopped, `ℹ️` runtime active but no model loaded, `✅` model loaded
 - **🛡️ Robust Runtime Handling**: Cooldown guard against double-click actions and best-effort process stop fallbacks
-- **🧠 Interactive Model Selection**: Optional model selection via `--list-models`
+- **🧠 Interactive Model Selection**: Choose from local models via `--list-models` and auto-load the selection in daemon mode
 - **🧰 Comprehensive Setup Script** (`setup.sh`): Checks for and installs dependencies, sets up Python environment, and provides a `--dry-run` option for previewing actions without making changes
 
 ## Getting Started
@@ -91,10 +92,10 @@ The script will:
 # Launch GUI (stops daemon first)
 ./lmstudio_autostart.sh --gui
 
-# Interactive model selection
+# Interactive model selection (loads selected model)
 ./lmstudio_autostart.sh --list-models
 
-# Start with model label for tray/status context
+# Start and load a specific model key
 ./lmstudio_autostart.sh --model qwen2.5:7b-instruct
 
 # Debug mode with verbose output
@@ -106,6 +107,13 @@ lms ps
 # Stop daemon manually
 lms daemon down
 ```
+
+## Requirements
+
+- **LM Studio Daemon** (llmster v0.0.3+): Headless backend for model inference
+- **Python 3** with PyGObject (for GTK3 system tray)
+- **Bash 5+** for automation scripts
+- Linux system with GNOME/GTK3 support (Pop!_OS, Ubuntu, Fedora, etc.)
 
 ## Troubleshooting
 
@@ -130,13 +138,6 @@ cat .logs/lmstudio_tray.log
 - **[Full Documentation](docs/guide.html)** - Detailed usage examples, flow diagrams, and architecture
 - **[Setup Guide](docs/SETUP.md)** - Complete setup.sh guide, Python environment configuration, and troubleshooting
 - **[Python Docstrings Reference](docs/python_docstrings.html)** - Static API-style view of `lmstudio_tray.py` docstrings
-
-## Requirements
-
-- **LM Studio Daemon** (llmster v0.0.3+): Headless backend for model inference
-- **Python 3** with PyGObject (for GTK3 system tray)
-- **Bash 5+** for automation scripts
-- Linux system with GNOME/GTK3 support (Pop!_OS, Ubuntu, Fedora, etc.)
 
 ## Security & Community
 

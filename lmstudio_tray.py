@@ -58,10 +58,10 @@ if DEBUG_MODE:
 INTERVAL = 10
 
 # === GTK icon names from the icon browser ===
-ICON_OK = "emblem-default"         # ✅ Model active
-ICON_FAIL = "emblem-unreadable"    # ❌ LM-Studio daemon not running
-ICON_WARN = "dialog-warning"       # ⚠️ No modell loaded
-ICON_INFO = "help-info"            # ℹ️ Loaded model changed
+ICON_OK = "emblem-default"         # ✅ Model loaded
+ICON_FAIL = "emblem-unreadable"    # ❌ Daemon and app not installed
+ICON_WARN = "dialog-warning"       # ⚠️ Daemon and app stopped
+ICON_INFO = "help-info"            # ℹ️ Runtime active, no model
 
 # === Path to lms-CLI ===
 LMS_CLI = os.path.expanduser("~/.lmstudio/bin/lms")
@@ -198,13 +198,10 @@ logging.info("Tray script started")
 
 
 class TrayIcon:
-    """Manages a GTK tray icon for monitoring LM Studio model status.
+    """Manage the GTK tray icon for LM Studio runtime monitoring.
 
-    This class creates and maintains a system tray icon that displays the
-    current status of LM Studio models. It periodically checks if the
-    expected model is loaded and provides a context menu for daemon
-    management, model reloading, and status viewing. Status changes trigger
-    desktop notifications.
+    The tray displays runtime status, provides daemon/app controls, and sends
+    desktop notifications on status transitions.
     """
     def __init__(self):
         # Use AppIndicator3 instead of deprecated StatusIcon

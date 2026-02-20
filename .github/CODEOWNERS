@@ -1,0 +1,17 @@
+# Default owners for the entire repository
+* @Ajimaru
+
+# Workflows and repository automation
+/.github/ @Ajimaru
+
+# Core runtime scripts
+/lmstudio_autostart.sh @Ajimaru
+/lmstudio_tray.py @Ajimaru
+/setup.sh @Ajimaru
+
+# Documentation
+/docs/ @Ajimaru
+/README.md @Ajimaru
+/SECURITY.md @Ajimaru
+/CHANGELOG.md @Ajimaru
+/CONTRIBUTING.md @Ajimaru

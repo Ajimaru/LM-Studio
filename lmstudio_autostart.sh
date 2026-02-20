@@ -109,7 +109,9 @@ list_models() {
     if command -v lms >/dev/null 2>&1; then LMS_CANDIDATES+=("$(command -v lms)"); fi
 
     for cand in "${LMS_CANDIDATES[@]}"; do
-        [ -n "$cand" ] && [ -x "$cand" ] || continue
+        if [ -z "$cand" ] || [ ! -x "$cand" ]; then
+            continue
+        fi
         local out rc
         set +e
         out="$("$cand" models list 2>/dev/null)"; rc=$?

@@ -646,13 +646,9 @@ def test_manual_check_updates_reports_update_available(
 
     monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
     tray.manual_check_updates(None)
-    # check_updates() sends 1st notification, manual_check_updates() sends 2nd
-    assert len(notify_calls) == 2  # nosec B101
-    # First notification is from check_updates()
-    assert "Update Available" in str(notify_calls[0])  # nosec B101
-    # Second notification is from manual_check_updates()
-    msg = str(notify_calls[1])
-    assert "Update Check" in msg  # nosec B101
+    assert len(notify_calls) == 1  # nosec B101
+    msg = str(notify_calls[0])
+    assert "Update Available" in msg  # nosec B101
     assert "v2.0.0" in msg  # nosec B101
 
 

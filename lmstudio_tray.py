@@ -433,10 +433,10 @@ class TrayIcon:
         self.last_status = None
         self.check_model()
         GLib.timeout_add_seconds(INTERVAL, self.check_model)
-        self.check_updates()
+        GLib.timeout_add_seconds(5, self._check_updates_tick)
         GLib.timeout_add_seconds(
             UPDATE_CHECK_INTERVAL,
-            self.check_updates,
+            self._check_updates_tick,
         )
 
     def begin_action_cooldown(self, action_name, seconds=2.0):
@@ -1297,11 +1297,16 @@ class TrayIcon:
         status = self.update_status or "Unknown"
         return f"{APP_VERSION} ({status})"
 
+    def _check_updates_tick(self):
+        """Run the update check for scheduled timers."""
+        self.check_updates()
+        return True
+
     def manual_check_updates(self, _widget):
         """Run update check on demand and notify about the result."""
-        self.check_updates()
+        notified = self.check_updates()
         notify_cmd = get_notify_send_cmd()
-        if not notify_cmd:
+        if not notify_cmd or notified:
             return
 
         status = self.update_status or "Unknown"
@@ -1322,18 +1327,22 @@ class TrayIcon:
         self._run_validated_command([notify_cmd, "Update Check", message])
 
     def check_updates(self):
-        """Check GitHub for a newer release and notify the user."""
+        """Check GitHub for a newer release and notify the user.
+
+        Returns:
+            bool: True if a notification was sent.
+        """
         if APP_VERSION == DEFAULT_APP_VERSION:
             self.update_status = "Dev build"
             logging.debug("Update check skipped: dev build")
-            return True
+            return False
 
         latest, error = get_latest_release_version()
         self.last_update_error = error
         if not latest:
             self.update_status = "Unknown"
             logging.debug("Update check failed: %s", error)
-            return True
+            return False
 
         self.latest_update_version = latest
         self.last_update_error = None
@@ -1349,10 +1358,10 @@ class TrayIcon:
         )
 
         if not is_newer_version(APP_VERSION, latest):
-            return True
+            return False
 
         if self.last_update_version == latest:
-            return True
+            return False
 
         self.last_update_version = latest
         notify_cmd = get_notify_send_cmd()
@@ -1363,7 +1372,8 @@ class TrayIcon:
             self._run_validated_command(
                 [notify_cmd, "Update Available", message]
             )
-        return True
+            return True
+        return False
 
     def check_model(self):
         """

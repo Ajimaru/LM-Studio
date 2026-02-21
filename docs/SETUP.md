@@ -8,6 +8,7 @@ The `setup.sh` script automates the complete setup process for LM Studio automat
   - [Table of Contents](#table-of-contents)
   - [What setup.sh Does](#what-setupsh-does)
   - [Quick Start](#quick-start)
+  - [Dry-run Mode](#dry-run-mode)
   - [Setup Script Outputs](#setup-script-outputs)
     - [If LM Studio Daemon is Missing](#if-lm-studio-daemon-is-missing)
     - [If LM Studio Desktop App is Missing](#if-lm-studio-desktop-app-is-missing)
@@ -15,6 +16,10 @@ The `setup.sh` script automates the complete setup process for LM Studio automat
   - [What's Inside the venv?](#whats-inside-the-venv)
   - [File Structure After Setup](#file-structure-after-setup)
   - [Environment Variables](#environment-variables)
+  - [Log File Format](#log-file-format)
+    - [setup.log](#setuplog)
+    - [lmstudio\_autostart.log](#lmstudio_autostartlog)
+    - [lmstudio\_tray.log](#lmstudio_traylog)
   - [Desktop App Launch via Tray Monitor](#desktop-app-launch-via-tray-monitor)
     - [Recommended Setup](#recommended-setup)
     - [How "Start Desktop App" Works](#how-start-desktop-app-works)
@@ -197,6 +202,54 @@ export LM_AUTOSTART_DEBUG=1
 export LM_AUTOSTART_SELECT_TIMEOUT=60
 ./lmstudio_autostart.sh -L  # Interactive model selection + loads selected model in daemon mode
 
+```
+
+## Log File Format
+
+All log files include a standardized header at the start that shows when the script was run:
+
+### setup.log
+
+```text
+================================================================================
+LM Studio Setup Log
+Started: 2026-02-20 21:54:38
+================================================================================
+[2026-02-20 21:54:38] [INFO] --- LM-Studio-Tray-Manager Setup ---
+[2026-02-20 21:54:38] [OK] LM Studio daemon found
+...
+```
+
+### lmstudio_autostart.log
+
+```text
+================================================================================
+LM Studio Autostart Log
+Started: 2026-02-20 21:55:18
+================================================================================
+2026-02-20 21:55:18 🚀 Starting llmster headless daemon...
+2026-02-20 21:55:18 ✅ llmster started.
+...
+```
+
+### lmstudio_tray.log
+
+```text
+================================================================================
+LM Studio Tray Monitor Log
+Started: 2026-02-20 21:55:18
+================================================================================
+2026-02-20 21:55:18,988 - INFO - Tray script started
+2026-02-20 21:55:19,123 - INFO - Status change: WARN -> INFO
+...
+```
+
+Each log file is **recreated** (cleared) when the corresponding script starts, ensuring fresh logs for each run. View logs in real-time with:
+
+```bash
+tail -f .logs/setup.log
+tail -f .logs/lmstudio_autostart.log
+tail -f .logs/lmstudio_tray.log
 ```
 
 ## Desktop App Launch via Tray Monitor

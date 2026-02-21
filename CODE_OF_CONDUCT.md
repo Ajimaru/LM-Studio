@@ -24,7 +24,7 @@ Project maintainers may remove, edit, or reject comments, commits, issues, or pu
 
 ## Reporting
 
-If you experience or witness unacceptable behavior, contact the maintainer (`Ajimaru`) through GitHub.
+If you experience or witness unacceptable behavior, contact the maintainer (`@Ajimaru`) through GitHub.
 
 ## Attribution
 

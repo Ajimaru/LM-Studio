@@ -49,142 +49,345 @@
             grid-template-columns: 280px 1fr;
             min-height: 100dvh;
         }
-        a { color: var(--accent-color); }
         nav {
             background: var(--sidebar-bg);
+            padding: 2rem 1rem;
             border-right: 1px solid var(--border-color);
-            padding: 24px 20px;
             position: sticky;
             top: 0;
             height: 100dvh;
-            overflow: auto;
+            overflow-y: auto;
         }
-        .toc { list-style: none; padding: 0; margin: 12px 0 0; }
-        .toc li { margin: 8px 0; }
-        .toc a {
+        nav h2 {
+            color: var(--sidebar-text);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 1.5rem 0 0.75rem 0;
+            font-weight: 600;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        nav a {
+            display: block;
             color: var(--sidebar-text);
             text-decoration: none;
-            display: block;
-            padding: 8px 10px;
+            padding: 0.5rem 0.75rem;
             border-radius: 6px;
+            margin-bottom: 0.25rem;
+            transition: all 0.15s;
+            font-size: 0.92rem;
         }
-        .toc a:hover { background: var(--highlight); }
-        main { padding: 28px clamp(18px, 3vw, 40px); }
-        section {
+        nav a:hover {
+            background: var(--highlight);
+            color: var(--accent-color);
+            padding-left: 1rem;
+        }
+        main {
+            padding: 3rem 4rem;
+            max-width: 1200px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+            font-weight: 700;
+        }
+        .subtitle {
+            color: var(--muted-text);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        .intro {
             background: var(--bg-elev);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+        section {
+            margin-bottom: 3rem;
+        }
+        h2 {
+            font-size: 1.8rem;
+            margin: 2.5rem 0 1rem 0;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+        .item {
+            background: var(--bg-elev);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow);
-            padding: 18px;
-            border-radius: 14px;
-            margin: 18px 0;
         }
-        h1, h2 { margin-top: 0; }
-        h2 { color: var(--accent-color); }
-        h3 { color: var(--accent-3); }
-        code {
-            background: var(--code-bg);
-            padding: 2px 6px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        .item-header {
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
         }
-        pre {
+        .item-name {
+            font-family: 'Courier New', Consolas, monospace;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-2);
+        }
+        .item-type {
             background: var(--code-bg);
-            border: 1px solid var(--border-color);
-            padding: 14px;
-            border-radius: 12px;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--accent-3);
+        }
+        .item-signature {
+            font-family: 'Courier New', Consolas, monospace;
+            background: var(--code-bg);
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            color: var(--text-color);
             overflow-x: auto;
+        }
+        .item-doc {
+            color: var(--text-color);
+            line-height: 1.6;
             white-space: pre-wrap;
         }
-        .muted { color: var(--muted-text); }
-        @media (max-width: 920px) {
-            body { grid-template-columns: 1fr; }
-            nav { position: static; height: auto; }
+        .no-doc {
+            color: var(--muted-text);
+            font-style: italic;
+        }
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--muted-text);
+            font-size: 0.9rem;
+        }
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+            }
+            nav {
+                position: static;
+                height: auto;
+            }
+            main {
+                padding: 2rem 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <nav aria-label="Table of contents">
-        <h2>Docstrings</h2>
-        <ul class="toc">
+    <nav>
+        <h2>Navigation</h2>
+        <ul>
             <li><a href="#overview">Overview</a></li>
-            <li><a href="#module">Module</a></li>
-            <li><a href="#functions">Top-level Functions</a></li>
-            <li><a href="#trayicon">Class TrayIcon</a></li>
-            <li><a href="#methods">TrayIcon Methods</a></li>
-            <li><a href="#test-docstrings">Test Module Docstrings</a></li>
+            <li><a href="#main-module">Main Module</a></li>
+            <li><a href="#test-docstrings">Test Suite</a></li>
         </ul>
-        <p class="muted"><a href="index.html">← Back to main docs</a></p>
     </nav>
-
     <main>
-        <section id="overview">
-            <h1>Python Docstrings Reference</h1>
-            <p>Static API documentation extracted from <code>lmstudio_tray.py</code> docstrings.</p>
-            <p class="muted">Intended for GitHub Pages integration with the existing docs set.</p>
-        </section>
+        <h1>LM Studio Tray Manager</h1>
+        <p class="subtitle">Python Docstrings Documentation</p>
+        
+        <div class="intro" id="overview">
+            <p>This documentation provides detailed information about the functions and classes in the LM Studio Tray Manager project.</p>
+            <p><strong>Last updated:</strong> 2026-02-21</p>
+        </div>
 
-        <section id="module">
-            <h2>Module Docstring</h2>
-            <pre>LM Studio Tray Icon Monitor.
+        <section id="main-module">
+            <h2>Main Module (lmstudio_tray.py)</h2>
 
-A GTK3-based system tray application that monitors the status of the LM Studio
-daemon and desktop app. It displays visual indicators and notifications when
-status changes, and supports starting/stopping daemon and desktop app as well
-as viewing status information through a context menu.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_app_version</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_app_version()</div>
+                <div class="item-doc">Load app version from VERSION file in script directory.</div>
+            </div>
 
-The script accepts optional command-line arguments:
-    - sys.argv[1]: Model name to monitor (default: "no-model-passed")
-    - sys.argv[2]: Script directory for logging (default: current working dir)
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_lms_cmd</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_lms_cmd()</div>
+                <div class="item-doc">Return the LM Studio CLI path if executable or resolve it from PATH.</div>
+            </div>
 
-Logging is written to ".logs/lmstudio_tray.log" in the script directory.</pre>
-        </section>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_llmster_cmd</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_llmster_cmd()</div>
+                <div class="item-doc">Return llmster executable path from PATH or LM Studio install dir.</div>
+            </div>
 
-        <section id="functions">
-            <h2>Top-level Functions</h2>
-            <h3><code>get_lms_cmd()</code></h3>
-            <pre>Return the LM Studio CLI path if executable or resolve it from PATH.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_pkill_cmd</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_pkill_cmd()</div>
+                <div class="item-doc">Return the absolute pkill path from PATH if available.</div>
+            </div>
 
-            <h3><code>get_llmster_cmd()</code></h3>
-            <pre>Return llmster executable path from PATH or LM Studio install dir.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_notify_send_cmd</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_notify_send_cmd()</div>
+                <div class="item-doc">Return the absolute notify-send path from PATH if available.</div>
+            </div>
 
-            <h3><code>is_llmster_running()</code></h3>
-            <pre>Return True when a llmster process is currently running.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_ps_cmd</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_ps_cmd()</div>
+                <div class="item-doc">Return the absolute ps path from PATH if available.</div>
+            </div>
 
-            <h3><code>get_desktop_app_pids()</code></h3>
-            <pre>Return PIDs of LM Studio desktop app root processes.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_pgrep_cmd</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_pgrep_cmd()</div>
+                <div class="item-doc">Return the absolute pgrep path from PATH if available.</div>
+            </div>
 
-            <h3><code>kill_existing_instances()</code></h3>
-            <pre>Terminate other running instances of this script.</pre>
-        </section>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_dpkg_cmd</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_dpkg_cmd()</div>
+                <div class="item-doc">Return the absolute dpkg path from PATH if available.</div>
+            </div>
 
-        <section id="trayicon">
-            <h2>Class <code>TrayIcon</code></h2>
-            <pre>Manage the GTK tray icon for LM Studio runtime monitoring.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_run_safe_command</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_run_safe_command(command)</div>
+                <div class="item-doc">Run a pre-validated command list via subprocess.
 
-The tray displays runtime status, provides daemon/app controls, and sends
-desktop notifications on status transitions.</pre>
-        </section>
+The caller MUST ensure that ``command`` only contains trusted,
+absolute-path executables resolved through helper functions.
 
-        <section id="methods">
-            <h2>TrayIcon Methods</h2>
-            <h3><code>begin_action_cooldown(action_name, seconds=2.0)</code></h3>
-            <pre>Prevent rapid double-triggering of tray actions.</pre>
-
-            <h3><code>build_menu()</code></h3>
-            <pre>Build or rebuild the context menu with current status and
-options.</pre>
-
-            <h3><code>get_daemon_status()</code></h3>
-            <pre>Check if llmster headless daemon is running.
+Args:
+    command: List of strings forming the command.
 
 Returns:
-    str: "running" if daemon process is active,
-         "stopped" if llmster is installed but daemon not running,
-         "not_found" if llmster is not installed.</pre>
+    CompletedProcess: The completed process result.
 
-            <h3><code>get_desktop_app_status()</code></h3>
-            <pre>Check if LM Studio desktop app is running.
+Raises:
+    ValueError: If command format is invalid or executable is not
+        an absolute path.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">is_llmster_running</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">is_llmster_running()</div>
+                <div class="item-doc">Return True when a llmster process is currently running.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_desktop_app_pids</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_desktop_app_pids()</div>
+                <div class="item-doc">Return PIDs of LM Studio desktop app root processes.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">kill_existing_instances</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">kill_existing_instances()</div>
+                <div class="item-doc">Terminate other running instances of this script.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">TrayIcon</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">TrayIcon()</div>
+                <div class="item-doc">Manage the GTK tray icon for LM Studio runtime monitoring.
+
+The tray displays runtime status, provides daemon/app controls, and sends
+desktop notifications on status transitions.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">__init__</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">__init__(self)</div>
+                <div class="item-doc">Initialize tray indicator, menu, and periodic status checks.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">begin_action_cooldown</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">begin_action_cooldown(self, action_name, seconds)</div>
+                <div class="item-doc">Prevent rapid double-triggering of tray actions.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">build_menu</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">build_menu(self)</div>
+                <div class="item-doc">Build or rebuild the context menu with current status and
+options.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_daemon_status</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_daemon_status(self)</div>
+                <div class="item-doc">Check if llmster headless daemon is running.
+
+Returns:
+    str: &quot;running&quot; if daemon process is active,
+         &quot;stopped&quot; if llmster is installed but daemon not running,
+         &quot;not_found&quot; if llmster is not installed.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_desktop_app_status</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_desktop_app_status(self)</div>
+                <div class="item-doc">Check if LM Studio desktop app is running.
 
 The desktop app is started via lmstudio_autostart.sh --gui or directly,
 and runs WITHOUT the --run-as-service flag.
@@ -192,21 +395,56 @@ and runs WITHOUT the --run-as-service flag.
 This is different from the headless daemon (--run-as-service).
 
 Returns:
-    str: "running" if desktop app process is active,
-         "stopped" if installed but not running,
-         "not_found" if not installed.</pre>
+    str: &quot;running&quot; if desktop app process is active,
+         &quot;stopped&quot; if installed but not running,
+         &quot;not_found&quot; if not installed.</div>
+            </div>
 
-            <h3><code>get_status_indicator(status)</code></h3>
-            <pre>Convert status string to emoji indicator.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_status_indicator</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_status_indicator(self, status)</div>
+                <div class="item-doc">Convert status string to emoji indicator.
 
 Args:
-    status: "running", "stopped", or "not_found"
+    status: &quot;running&quot;, &quot;stopped&quot;, or &quot;not_found&quot;
 
 Returns:
-    str: Emoji indicator (🟢 running, 🟡 stopped, 🔴 not_found)</pre>
+    str: Emoji indicator (🟢 running, 🟡 stopped, 🔴 not_found)</div>
+            </div>
 
-            <h3><code>_run_daemon_attempts(attempts, stop_when)</code></h3>
-            <pre>Run daemon command attempts until a condition is met.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_run_validated_command</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_run_validated_command(command)</div>
+                <div class="item-doc">Run a pre-validated command list via subprocess.
+
+The caller MUST ensure that ``command`` only contains trusted,
+absolute-path executables resolved through ``get_lms_cmd``,
+``get_llmster_cmd`` or equivalent helpers.
+
+Args:
+    command: List of strings forming the command.
+
+Returns:
+    CompletedProcess: The completed process result.
+
+Raises:
+    ValueError: If command format is invalid or executable is not
+        absolute path.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_run_daemon_attempts</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_run_daemon_attempts(self, attempts, stop_when)</div>
+                <div class="item-doc">Run daemon command attempts until a condition is met.
 
 Args:
     attempts: Ordered list of command argument lists.
@@ -215,81 +453,156 @@ Args:
 
 Returns:
     CompletedProcess | None: Last command result, or None if no
-    command was executed.</pre>
+    command was executed.</div>
+            </div>
 
-            <h3><code>_build_daemon_attempts(action)</code></h3>
-            <pre>Build ordered daemon CLI attempts for one action.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_build_daemon_attempts</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_build_daemon_attempts(self, action)</div>
+                <div class="item-doc">Build ordered daemon CLI attempts for one action.
 
 Args:
-    action: Either "start" or "stop".
+    action: Either &quot;start&quot; or &quot;stop&quot;.
 
 Returns:
-    list[list[str]]: Commands to try in order.</pre>
+    list[list[str]]: Commands to try in order.</div>
+            </div>
 
-            <h3><code>_force_stop_llmster()</code></h3>
-            <pre>Force-stop llmster and wait briefly for process exit.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_force_stop_llmster</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_force_stop_llmster(self)</div>
+                <div class="item-doc">Force-stop llmster and wait briefly for process exit.</div>
+            </div>
 
-            <h3><code>_stop_llmster_best_effort()</code></h3>
-            <pre>Stop llmster with graceful attempts and force-stop fallback.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_stop_llmster_best_effort</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_stop_llmster_best_effort(self)</div>
+                <div class="item-doc">Stop llmster with graceful attempts and force-stop fallback.
 
 Returns:
-    tuple[bool, CompletedProcess | None]:
+    tuple[bool, CompletedProcess | None]: Tuple containing:
         - True when llmster is no longer running.
-        - Last command result used during stop attempts.</pre>
+        - Last command result used during stop attempts.</div>
+            </div>
 
-            <h3><code>_stop_desktop_app_processes()</code></h3>
-            <pre>Stop LM Studio desktop processes using TERM, then KILL.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_stop_desktop_app_processes</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_stop_desktop_app_processes(self)</div>
+                <div class="item-doc">Stop LM Studio desktop processes using TERM, then KILL.
 
 Returns:
-    bool: True when the desktop app is no longer running.</pre>
+    bool: True when the desktop app is no longer running.</div>
+            </div>
 
-            <h3><code>start_daemon(_widget)</code></h3>
-            <pre>Start the headless daemon.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">start_daemon</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">start_daemon(self, _widget)</div>
+                <div class="item-doc">Start the headless daemon.
 
 Stops the desktop app first if needed, then tries daemon start
 variants and notifies on success/failure.
 
 Args:
-    _widget: Widget that triggered the action (unused).</pre>
+    _widget: Widget that triggered the action (unused).</div>
+            </div>
 
-            <h3><code>stop_daemon(_widget)</code></h3>
-            <pre>Stop the headless daemon.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">stop_daemon</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">stop_daemon(self, _widget)</div>
+                <div class="item-doc">Stop the headless daemon.
 
 Tries graceful stop variants first and falls back to force-stop.
 
 Args:
-    _widget: Widget that triggered the action (unused).</pre>
+    _widget: Widget that triggered the action (unused).</div>
+            </div>
 
-            <h3><code>start_desktop_app(_widget)</code></h3>
-            <pre>Start the LM Studio desktop app.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">start_desktop_app</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">start_desktop_app(self, _widget)</div>
+                <div class="item-doc">Start the LM Studio desktop app.
 
 Stops the daemon first if needed, locates the app (.deb or AppImage),
 and launches it with user notification.
 
 Args:
-    _widget: Widget that triggered the action (unused).</pre>
+    _widget: Widget that triggered the action (unused).</div>
+            </div>
 
-            <h3><code>stop_desktop_app(_widget)</code></h3>
-            <pre>Stop the LM Studio desktop app process.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">stop_desktop_app</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">stop_desktop_app(self, _widget)</div>
+                <div class="item-doc">Stop the LM Studio desktop app process.
 
 Useful when the window closes to tray but the process remains active.
 
 Args:
-    _widget: Widget that triggered the action (unused).</pre>
+    _widget: Widget that triggered the action (unused).</div>
+            </div>
 
-            <h3><code>quit_app(_widget)</code></h3>
-            <pre>Handle the tray quit action by logging and exiting the Gtk main
-loop.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">quit_app</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">quit_app(self, _widget)</div>
+                <div class="item-doc">Handle the tray quit action by logging and exiting the Gtk main
+loop.</div>
+            </div>
 
-            <h3><code>show_status_dialog(_widget)</code></h3>
-            <pre>Show a GTK message dialog containing the LM Studio CLI status output.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">show_status_dialog</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">show_status_dialog(self, _widget)</div>
+                <div class="item-doc">Show a GTK message dialog containing the LM Studio CLI status output.
 
 Runs `lms ps` to retrieve status information, formats a friendly
 message on success or error, and displays it in an informational
-dialog. Errors are caught and shown to the user instead of raising.</pre>
+dialog. Errors are caught and shown to the user instead of raising.</div>
+            </div>
 
-            <h3><code>check_model()</code></h3>
-            <pre>Check LM Studio runtime/model status and update the tray icon.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">show_about_dialog</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">show_about_dialog(self, _widget)</div>
+                <div class="item-doc">Show application information in a GTK dialog.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">check_model</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">check_model(self)</div>
+                <div class="item-doc">Check LM Studio runtime/model status and update the tray icon.
 
 Updates the tray icon using this schema:
 - FAIL: neither daemon nor desktop app is installed
@@ -302,92 +615,909 @@ non-None state, and logs status changes and errors.
 
 Returns:
     bool: True to indicate the check completed (used for scheduled
-    callbacks).</pre>
+    callbacks).</div>
+            </div>
+
         </section>
 
         <section id="test-docstrings">
-            <h2>Test Module <code>tests/test_lmstudio_tray.py</code></h2>
-            <p>Docstrings from the pytest module are documented here for helper classes, fixtures, and test cases.</p>
+            <h2>Test Suite (test_lmstudio_tray.py)</h2>
 
-            <h3>Module Docstring</h3>
-            <pre>Test suite for lmstudio_tray.py system tray application.
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummyMenu</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummyMenu()</div>
+                <div class="item-doc">Dummy menu used by tests.</div>
+            </div>
 
-This module contains comprehensive tests for the LM Studio system tray
-application, including tests for:
-- Daemon management (start/stop)
-- Desktop application lifecycle
-- Status monitoring and indicators
-- Menu building and interaction
-- Command resolution and execution
-- Error handling and edge cases
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">__init__</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">__init__(self)</div>
+                <div class="item-doc">Initialize an in-memory list of menu items.</div>
+            </div>
 
-The tests use mocked GTK, AppIndicator, and GLib components to avoid requiring
-a display server or actual system dependencies during test execution.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">get_children</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">get_children(self)</div>
+                <div class="item-doc">Return current child items as a copy.</div>
+            </div>
 
-            <h3>Helper Class Docstrings</h3>
-            <pre>DummyMenu: Dummy menu used by tests.
-DummyMenuItem: Dummy menu item used by tests.
-DummySeparatorMenuItem: A dummy separator menu item for testing purposes.
-DummyMessageDialog: Dummy message dialog to capture interactions.
-DummyIndicator: Dummy indicator capturing status and menu updates.
-DummyAppIndicatorModule: Mock AppIndicator3 module for testing purposes.
-DummyGtkModule: Mock GTK module for testing purposes.
-DummyGLibModule: A dummy GLib module for testing purposes.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">remove</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">remove(self, item)</div>
+                <div class="item-doc">Remove a menu item from the container.</div>
+            </div>
 
-            <h3>Top-level Helper &amp; Fixture Docstrings</h3>
-            <pre>_completed(): Create a subprocess-like completed result object.
-tray_module_fixture(): Import lmstudio_tray with mocked GI/GTK dependencies.
-_make_tray_instance(): Build a partially initialized TrayIcon for unit tests.
-_call_member(): Call a member by name to avoid direct protected-member access.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">append</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">append(self, item)</div>
+                <div class="item-doc">Append a menu item to the container.</div>
+            </div>
 
-            <h3>Test Function Docstrings</h3>
-            <pre>test_get_app_version_reads_file(): Read version string from a VERSION file.
-test_get_app_version_fallback_default(): Fall back to default version when file is absent.
-test_get_lms_cmd_prefers_lms_cli(): Prefer bundled LMS_CLI path when executable.
-test_get_lms_cmd_fallback_to_which(): Resolve lms command from PATH when bundled binary is unavailable.
-test_get_llmster_cmd_from_which(): Return llmster executable found on PATH.
-test_get_llmster_cmd_from_directory_scan(): Pick latest discovered llmster binary from install directories.
-test_is_llmster_running_true_first_check(): Report running when first pgrep call succeeds.
-test_is_llmster_running_true_second_check(): Report running when second fallback pgrep succeeds.
-test_get_desktop_app_pids_parsing(): Parse desktop app root process IDs from ps output.
-test_kill_existing_instances_ignores_current_pid(): Terminate only stale tray process IDs.
-test_begin_action_cooldown(): Throttle repeated actions within cooldown window.
-test_get_status_indicator(): Map status strings to indicator symbols.
-test_build_daemon_attempts_start_and_stop(): Build expected daemon start and stop command variants.
-test_run_daemon_attempts_stops_on_condition(): Stop command iteration once stop condition is met.
-test_stop_llmster_best_effort_with_force(): Force-stop llmster when graceful stop does not finish.
-test_stop_desktop_app_processes_success(): Stop desktop app processes using SIGTERM path.
-test_start_daemon_missing_binaries_notifies(): Notify user when daemon binaries are unavailable.
-test_stop_daemon_success_path(): Notify user when daemon stop succeeds.
-test_start_desktop_app_missing_lms(): Notify user when lms CLI is missing.
-test_start_desktop_app_appimage_found_and_started(): Launch desktop app when AppImage is discovered.
-test_stop_desktop_app_no_process_path(): Handle desktop stop request when no process is running.
-test_show_status_dialog_success(): Render status dialog with lms output.
-test_show_about_dialog_contains_version_and_repo(): Show about dialog including version and repository metadata.
-test_check_model_fail_warn_info_ok(): Cover FAIL/WARN/INFO/OK icon and transition handling.
-test_build_menu_running_entries(): Build menu entries for running daemon and desktop app.
-test_build_menu_not_found_entries(): Build menu entries for missing daemon and desktop app.
-test_get_daemon_status_variants(): Return daemon status for missing, running, and stopped cases.
-test_get_desktop_app_status_variants(): Return desktop app status for running and installed variants.
-test_force_stop_llmster(): Issue force-stop commands for llmster.
-test_stop_desktop_app_processes_force_kill_path(): Escalate to SIGKILL when desktop app ignores SIGTERM.
-test_start_daemon_success_after_stopping_app(): Start daemon successfully after stopping desktop app.
-test_start_daemon_exception_path(): Handle unexpected exception while starting daemon.
-test_stop_daemon_failure_detail_path(): Include subprocess detail when daemon stop fails.
-test_stop_daemon_exception_path(): Handle unexpected exception while stopping daemon.
-test_start_desktop_app_daemon_stop_fails(): Abort desktop start when daemon cannot be stopped.
-test_start_desktop_app_not_found_path(): Notify user when no desktop installation is found.
-test_start_desktop_app_popen_failure(): Handle Popen failure when launching desktop app.
-test_stop_desktop_app_exception_path(): Handle exception while stopping desktop app.
-test_show_status_dialog_error_path(): Render status dialog with an error message when lms is missing.
-test_check_model_timeout_and_exception_paths(): Keep check_model stable on timeout and subprocess errors.
-test_start_daemon_fails_when_desktop_cannot_stop(): Abort daemon start when desktop app fails to stop.
-test_debug_mode_import_enables_warning_capture(): Enable warning capture when module is imported in debug mode.
-test_trayicon_constructor_sets_indicator_and_timer(): Initialize tray indicator properties and periodic timer.
-test_get_llmster_cmd_permission_error_and_no_candidates(): Return None when llmster directory scan fails or finds no binaries.
-test_is_llmster_running_first_probe_match(): Return running when first process probe succeeds.
-test_is_llmster_running_second_probe_error(): Return not running when fallback probe raises subprocess error.</pre>
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">show_all</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">show_all(self)</div>
+                <div class="item-doc">Mimic GTK&#x27;s show_all call.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummyMenuItem</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummyMenuItem()</div>
+                <div class="item-doc">Dummy menu item used by tests.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">__init__</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">__init__(self, label)</div>
+                <div class="item-doc">Create a dummy menu item with label and callbacks.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">set_sensitive</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">set_sensitive(self, value)</div>
+                <div class="item-doc">Set whether the item is interactive.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">connect</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">connect(self, event, callback)</div>
+                <div class="item-doc">Store a signal connection tuple.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummySeparatorMenuItem</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummySeparatorMenuItem()</div>
+                <div class="item-doc">A dummy separator menu item for testing purposes.
+
+It serves as a visual divider between menu items.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummyMessageDialog</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummyMessageDialog()</div>
+                <div class="item-doc">Dummy message dialog to capture interactions.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">__init__</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">__init__(self, parent, flags, message_type, buttons, text)</div>
+                <div class="item-doc">Initialize a lightweight message dialog stub.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">format_secondary_text</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">format_secondary_text(self, text)</div>
+                <div class="item-doc">Store secondary dialog text.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">run</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">run(self)</div>
+                <div class="item-doc">Mark the dialog as shown.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">destroy</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">destroy(self)</div>
+                <div class="item-doc">Mark the dialog as destroyed.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummyIndicator</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummyIndicator()</div>
+                <div class="item-doc">Dummy indicator capturing status and menu updates.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">__init__</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">__init__(self)</div>
+                <div class="item-doc">Create a dummy indicator object for assertions.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">set_status</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">set_status(self, status)</div>
+                <div class="item-doc">Persist indicator status value.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">set_title</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">set_title(self, title)</div>
+                <div class="item-doc">Persist indicator title value.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">set_menu</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">set_menu(self, menu)</div>
+                <div class="item-doc">Persist menu reference.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">set_icon_full</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">set_icon_full(self, icon, text)</div>
+                <div class="item-doc">Record icon updates for later verification.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummyAppIndicatorModule</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummyAppIndicatorModule()</div>
+                <div class="item-doc">Mock AppIndicator3 module for testing purposes.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">IndicatorCategory</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">IndicatorCategory()</div>
+                <div class="item-doc">Enumeration-like class for indicator category constants.
+
+This class provides constant values for different indicator categories
+used in the application status system.
+
+Attributes:
+    APPLICATION_STATUS (int): Application status category constant.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">IndicatorStatus</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">IndicatorStatus()</div>
+                <div class="item-doc">Enumeration class for indicator status values.
+
+Attributes:
+    ACTIVE (int): Status code indicating the indicator is active.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">Indicator</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">Indicator()</div>
+                <div class="item-doc">Dummy Indicator class for testing purposes.
+
+This class provides a static factory method to create
+DummyIndicator instances for tests.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">new</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">new(_app_id, _icon, _category)</div>
+                <div class="item-doc">Return a dummy indicator instance.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummyGtkModule</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummyGtkModule()</div>
+                <div class="item-doc">Mock GTK module for testing purposes.
+
+This class simulates GTK so tests can run without a display server.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DialogFlags</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DialogFlags()</div>
+                <div class="item-doc">Enumeration of dialog window flags.
+
+This class defines constants for dialog window behavior flags,
+specifically for modal dialog configuration.
+
+Attributes:
+    MODAL (int): Flag indicating the dialog should be modal (value: 1).
+        It blocks interaction with other windows until closed.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">MessageType</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">MessageType()</div>
+                <div class="item-doc">Enumeration of message types for system tray notifications.
+
+Attributes:
+    INFO: Integer constant for informational message type.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">ButtonsType</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">ButtonsType()</div>
+                <div class="item-doc">Enumeration of button types for message dialogs.
+
+Attributes:
+    OK (int): Represents an OK button with value 1.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">main_quit</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">main_quit()</div>
+                <div class="item-doc">Stub GTK main_quit.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">main</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">main()</div>
+                <div class="item-doc">Stub GTK main loop entry.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">DummyGLibModule</span>
+                    <span class="item-type">class</span>
+                </div>
+                <div class="item-signature">DummyGLibModule()</div>
+                <div class="item-doc">A dummy GLib module for testing purposes.
+
+This class provides stub implementations of GLib functions to allow
+testing without requiring the actual GLib library. It mimics the behavior
+of the GLib module by providing minimal implementations that return
+successful responses.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">timeout_add_seconds</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">timeout_add_seconds(_seconds, _callback)</div>
+                <div class="item-doc">Stub timer registration and report success.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_completed</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_completed(returncode, stdout, stderr)</div>
+                <div class="item-doc">Create a subprocess-like completed result object.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">tray_module_fixture</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">tray_module_fixture(monkeypatch, tmp_path)</div>
+                <div class="item-doc">Import lmstudio_tray with mocked GI/GTK dependencies.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">fake_import_module</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">fake_import_module(name)</div>
+                <div class="item-doc">Resolve mocked GI modules during import.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">safe_run</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">safe_run(_args)</div>
+                <div class="item-doc">Return a safe default subprocess result during import.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_make_tray_instance</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_make_tray_instance(module)</div>
+                <div class="item-doc">Build a partially initialized TrayIcon for unit tests.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">_call_member</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">_call_member(instance, member_name)</div>
+                <div class="item-doc">Call a member by name to avoid direct protected-member access.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_app_version_reads_file</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_app_version_reads_file(tray_module, tmp_path, monkeypatch)</div>
+                <div class="item-doc">Read version string from a VERSION file.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_app_version_fallback_default</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_app_version_fallback_default(tray_module, tmp_path, monkeypatch)</div>
+                <div class="item-doc">Fall back to default version when file is absent.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_lms_cmd_prefers_lms_cli</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_lms_cmd_prefers_lms_cli(tray_module, monkeypatch)</div>
+                <div class="item-doc">Prefer bundled LMS_CLI path when executable.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_lms_cmd_fallback_to_which</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_lms_cmd_fallback_to_which(tray_module, monkeypatch)</div>
+                <div class="item-doc">Resolve lms command from PATH when bundled binary is unavailable.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_llmster_cmd_from_which</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_llmster_cmd_from_which(tray_module, monkeypatch)</div>
+                <div class="item-doc">Return llmster executable found on PATH.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_llmster_cmd_from_directory_scan</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_llmster_cmd_from_directory_scan(tray_module, monkeypatch)</div>
+                <div class="item-doc">Pick latest discovered llmster binary from install directories.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">fake_isfile</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">fake_isfile(path)</div>
+                <div class="item-doc">Match synthetic llmster binary candidates.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_is_llmster_running_true_first_check</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_is_llmster_running_true_first_check(tray_module, monkeypatch)</div>
+                <div class="item-doc">Report running when first pgrep call succeeds.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">fake_run</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">fake_run(args)</div>
+                <div class="item-doc">Track command usage and emulate successful process probe.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_is_llmster_running_true_second_check</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_is_llmster_running_true_second_check(tray_module, monkeypatch)</div>
+                <div class="item-doc">Report running when second fallback pgrep succeeds.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">fake_run</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">fake_run(_args)</div>
+                <div class="item-doc">Return predetermined probe results.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_desktop_app_pids_parsing</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_desktop_app_pids_parsing(tray_module, monkeypatch)</div>
+                <div class="item-doc">Parse desktop app root process IDs from ps output.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_kill_existing_instances_ignores_current_pid</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_kill_existing_instances_ignores_current_pid(tray_module, monkeypatch)</div>
+                <div class="item-doc">Terminate only stale tray process IDs.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_begin_action_cooldown</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_begin_action_cooldown(tray_module, monkeypatch)</div>
+                <div class="item-doc">Throttle repeated actions within cooldown window.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_status_indicator</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_status_indicator(tray_module)</div>
+                <div class="item-doc">Map status strings to indicator symbols.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_build_daemon_attempts_start_and_stop</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_build_daemon_attempts_start_and_stop(tray_module, monkeypatch)</div>
+                <div class="item-doc">Build expected daemon start and stop command variants.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_run_daemon_attempts_stops_on_condition</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_run_daemon_attempts_stops_on_condition(tray_module, monkeypatch)</div>
+                <div class="item-doc">Stop command iteration once stop condition is met.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">fake_run</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">fake_run(args)</div>
+                <div class="item-doc">Collect called commands and emulate success.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_llmster_best_effort_with_force</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_llmster_best_effort_with_force(tray_module, monkeypatch)</div>
+                <div class="item-doc">Force-stop llmster when graceful stop does not finish.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_desktop_app_processes_success</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_desktop_app_processes_success(tray_module, monkeypatch)</div>
+                <div class="item-doc">Stop desktop app processes using SIGTERM path.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_daemon_missing_binaries_notifies</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_daemon_missing_binaries_notifies(tray_module, monkeypatch)</div>
+                <div class="item-doc">Notify user when daemon binaries are unavailable.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_daemon_success_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_daemon_success_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Notify user when daemon stop succeeds.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_desktop_app_missing_lms</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_desktop_app_missing_lms(tray_module, monkeypatch)</div>
+                <div class="item-doc">Notify user when lms CLI is missing.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_desktop_app_appimage_found_and_started</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_desktop_app_appimage_found_and_started(tray_module, monkeypatch, tmp_path)</div>
+                <div class="item-doc">Launch desktop app when AppImage is discovered.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">fake_run</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">fake_run(args)</div>
+                <div class="item-doc">Return dpkg miss and generic success for other commands.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_desktop_app_no_process_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_desktop_app_no_process_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Handle desktop stop request when no process is running.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_show_status_dialog_success</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_show_status_dialog_success(tray_module, monkeypatch)</div>
+                <div class="item-doc">Render status dialog with lms output.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_show_about_dialog_contains_version_and_repo</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_show_about_dialog_contains_version_and_repo(tray_module, monkeypatch)</div>
+                <div class="item-doc">Show about dialog including version and repository metadata.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_check_model_fail_warn_info_ok</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_check_model_fail_warn_info_ok(tray_module, monkeypatch)</div>
+                <div class="item-doc">Cover FAIL/WARN/INFO/OK icon and transition handling.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_build_menu_running_entries</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_build_menu_running_entries(tray_module, monkeypatch)</div>
+                <div class="item-doc">Build menu entries for running daemon and desktop app.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_build_menu_not_found_entries</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_build_menu_not_found_entries(tray_module, monkeypatch)</div>
+                <div class="item-doc">Build menu entries for missing daemon and desktop app.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_daemon_status_variants</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_daemon_status_variants(tray_module, monkeypatch)</div>
+                <div class="item-doc">Return daemon status for missing, running, and stopped cases.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_desktop_app_status_variants</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_desktop_app_status_variants(tray_module, monkeypatch, tmp_path)</div>
+                <div class="item-doc">Return desktop app status for running and installed variants.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_force_stop_llmster</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_force_stop_llmster(tray_module, monkeypatch)</div>
+                <div class="item-doc">Issue force-stop commands for llmster.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_desktop_app_processes_force_kill_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_desktop_app_processes_force_kill_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Escalate to SIGKILL when desktop app ignores SIGTERM.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_daemon_success_after_stopping_app</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_daemon_success_after_stopping_app(tray_module, monkeypatch)</div>
+                <div class="item-doc">Start daemon successfully after stopping desktop app.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_daemon_exception_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_daemon_exception_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Handle unexpected exception while starting daemon.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_daemon_failure_detail_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_daemon_failure_detail_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Include subprocess detail when daemon stop fails.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_daemon_exception_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_daemon_exception_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Handle unexpected exception while stopping daemon.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_desktop_app_daemon_stop_fails</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_desktop_app_daemon_stop_fails(tray_module, monkeypatch)</div>
+                <div class="item-doc">Abort desktop start when daemon cannot be stopped.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_desktop_app_not_found_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_desktop_app_not_found_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Notify user when no desktop installation is found.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_desktop_app_popen_failure</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_desktop_app_popen_failure(tray_module, monkeypatch)</div>
+                <div class="item-doc">Handle Popen failure when launching desktop app.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_stop_desktop_app_exception_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_stop_desktop_app_exception_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Handle exception while stopping desktop app.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">flaky_run</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">flaky_run()</div>
+                <div class="item-doc">Fail once, then succeed to allow notify fallback.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_show_status_dialog_error_path</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_show_status_dialog_error_path(tray_module, monkeypatch)</div>
+                <div class="item-doc">Render status dialog with an error message when lms is missing.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_check_model_timeout_and_exception_paths</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_check_model_timeout_and_exception_paths(tray_module, monkeypatch)</div>
+                <div class="item-doc">Keep check_model stable on timeout and subprocess errors.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_start_daemon_fails_when_desktop_cannot_stop</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_start_daemon_fails_when_desktop_cannot_stop(tray_module, monkeypatch)</div>
+                <div class="item-doc">Abort daemon start when desktop app fails to stop.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_debug_mode_import_enables_warning_capture</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_debug_mode_import_enables_warning_capture(monkeypatch, tmp_path)</div>
+                <div class="item-doc">Enable warning capture when module is imported in debug mode.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">fake_import_module</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">fake_import_module(name)</div>
+                <div class="item-doc">Resolve mocked GI modules while importing debug module.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_trayicon_constructor_sets_indicator_and_timer</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_trayicon_constructor_sets_indicator_and_timer(tray_module, monkeypatch)</div>
+                <div class="item-doc">Initialize tray indicator properties and periodic timer.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_get_llmster_cmd_permission_error_and_no_candidates</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_get_llmster_cmd_permission_error_and_no_candidates(tray_module, monkeypatch)</div>
+                <div class="item-doc">Return None when llmster directory scan fails or finds no binaries.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_is_llmster_running_first_probe_match</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_is_llmster_running_first_probe_match(tray_module, monkeypatch)</div>
+                <div class="item-doc">Return running when first process probe succeeds.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">test_is_llmster_running_second_probe_error</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">test_is_llmster_running_second_probe_error(tray_module, monkeypatch)</div>
+                <div class="item-doc">Return not running when fallback probe raises subprocess error.</div>
+            </div>
+
+            <div class="item">
+                <div class="item-header">
+                    <span class="item-name">run_side_effect</span>
+                    <span class="item-type">function</span>
+                </div>
+                <div class="item-signature">run_side_effect()</div>
+                <div class="item-doc">Fail second probe after first probe miss.</div>
+            </div>
+
         </section>
+        
+        <footer>
+            <p>Generated from Python docstrings on 2026-02-21</p>
+            <p>LM Studio Tray Manager &copy; 2026</p>
+        </footer>
     </main>
 </body>
 </html>

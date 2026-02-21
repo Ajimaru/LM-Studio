@@ -17,7 +17,7 @@ Use one of these channels:
 
 - GitHub Security Advisories (preferred):
   - Repository → Security → Advisories → Report a vulnerability
-- Direct contact with the maintainer (`Ajimaru`) if advisories are unavailable
+- Direct contact with the maintainer (`@Ajimaru`) if advisories are unavailable
 
 Please include:
 

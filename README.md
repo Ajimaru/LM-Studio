@@ -90,6 +90,13 @@ The script will:
 - Check daemon log: `tail -f .logs/lmstudio_autostart.log`
 - Check tray log: `tail -f .logs/lmstudio_tray.log`
 
+## Requirements
+
+- **LM Studio Daemon** (llmster v0.0.3+): Headless backend for model inference
+- **Python 3** with PyGObject (for GTK3 system tray)
+- **Bash 5+** for automation scripts
+- Linux system with GNOME/GTK3 support (Pop!_OS, Ubuntu, Fedora, etc.)
+
 ## Quick Reference
 
 ```bash
@@ -123,13 +130,6 @@ lms ps
 # Stop daemon manually
 lms daemon down
 ```
-
-## Requirements
-
-- **LM Studio Daemon** (llmster v0.0.3+): Headless backend for model inference
-- **Python 3** with PyGObject (for GTK3 system tray)
-- **Bash 5+** for automation scripts
-- Linux system with GNOME/GTK3 support (Pop!_OS, Ubuntu, Fedora, etc.)
 
 ## Troubleshooting
 

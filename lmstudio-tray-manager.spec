@@ -50,12 +50,18 @@ def get_gdk_pixbuf_paths():
 
 gdk_binaries, gdk_datas = get_gdk_pixbuf_paths()
 
+project_root = os.path.abspath(os.path.dirname(__file__))
+
 a = Analysis(
-    ['lmstudio_tray.py'],
-    pathex=[],
+    [os.path.join(project_root, 'lmstudio_tray.py')],
+    pathex=[project_root],
     binaries=gdk_binaries,
-datas=(
-    [('VERSION', '.'), ('AUTHORS', '.')]
+    datas=[
+        (os.path.join(project_root, 'VERSION'), '.'),
+        (os.path.join(project_root, 'AUTHORS'), '.'),
+        (os.path.join(project_root, 'assets'), 'assets'),
+    ] + gdk_datas,
+    hiddenimports=[
      ([('assets', 'assets')] if os.path.exists('assets') else [])
      gdk_datas
 ),

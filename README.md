@@ -97,6 +97,10 @@ The script will:
 
 ## Quick Reference
 
+<!-- markdownlint-disable MD033 -->
+<details>
+<summary>Click here</summary>
+
 ```bash
 # First time setup
 ./setup.sh
@@ -116,9 +120,6 @@ The script will:
 # Interactive model selection (loads selected model)
 ./lmstudio_autostart.sh --list-models
 
-# Start and load a specific model key
-./lmstudio_autostart.sh --model qwen2.5:7b-instruct
-
 # Debug mode with verbose output
 ./lmstudio_autostart.sh --debug
 
@@ -128,6 +129,9 @@ lms ps
 # Stop daemon manually
 lms daemon down
 ```
+
+</details>
+<!-- markdownlint-enable MD033 -->
 
 ## Troubleshooting
 

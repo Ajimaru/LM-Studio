@@ -270,7 +270,6 @@ grep -i error .logs/*.log</code></pre>
                 -d, --debug       Enable debug output and Bash trace
                 -h, --help        Show help and exit
                 -L, --list-models List local models (interactive selection in TTY, then load selected model)
-                -m, --model NAME  Load specified model (empty NAME loads no model)
                 -g, --gui          Start the LM Studio GUI (stops daemon first)
 
             Environment variables:
@@ -443,10 +442,6 @@ EOF</code></pre>
             <h3>Start GUI (stops daemon first)</h3>
             <pre><code>./lmstudio_autostart.sh --gui</code></pre>
             <p>Stops the daemon, starts the GUI, and starts the tray monitor.</p>
-
-            <h3>Load Specific Model</h3>
-            <pre><code>./lmstudio_autostart.sh --model qwen2.5:7b-instruct</code></pre>
-            <p>Starts daemon mode and attempts to load the specified model.</p>
 
             <h3>Interactive Model Selection</h3>
             <pre><code>./lmstudio_autostart.sh --list-models</code></pre>

@@ -488,7 +488,65 @@ def test_is_newer_version(tray_module):
 def test_get_latest_release_version_reads_tag(tray_module, monkeypatch):
     """Extract tag_name from GitHub release payload."""
     payload = json.dumps({"tag_name": "v9.9.9"}).encode("utf-8")
-    monkeypatch.setattr(tray_module, "urllib_request", DummyUrlLib(payload))
+
+    class DummyResponse:
+        def __init__(self, data):
+            self._data = data
+
+        def read(self):
+            return self._data
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return False
+
+    class DummyOpener:
+        def __init__(self, data):
+            self._data = data
+
+        def open(self, _request, **_kwargs):
+            return DummyResponse(self._data)
+
+    class DummyOpenerDirector:
+        """Stand-in for urllib.request.OpenerDirector."""
+
+    def dummy_request(url, data=None, headers=None, method=None):
+        # Minimal Request stand-in; attributes are only for compatibility.
+        return SimpleNamespace(
+            full_url=url,
+            data=data,
+            headers=headers or {},
+            method=method,
+        )
+
+    class DummyHttpsHandler:
+        """Stand-in for urllib.request.HTTPSHandler."""
+
+    def dummy_build_opener(_handler):
+        return DummyOpener(payload)
+
+    monkeypatch.setattr(
+        tray_module.urllib_request,
+        "Request",
+        dummy_request,
+    )
+    monkeypatch.setattr(
+        tray_module.urllib_request,
+        "HTTPSHandler",
+        DummyHttpsHandler,
+    )
+    monkeypatch.setattr(
+        tray_module.urllib_request,
+        "OpenerDirector",
+        DummyOpenerDirector,
+    )
+    monkeypatch.setattr(
+        tray_module.urllib_request,
+        "build_opener",
+        dummy_build_opener,
+    )
     version, error = tray_module.get_latest_release_version()
     assert version == "v9.9.9"  # nosec B101
     assert error is None  # nosec B101

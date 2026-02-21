@@ -340,7 +340,8 @@ class DummyUrlLib:
 
         def __init__(self):
             """No-op initializer for handler stub."""
-            return None
+            # __init__ implicitly returns None; no explicit return needed.
+            pass
 
     class DummyOpenerDirector:
         """Dummy opener that returns a fixed response payload."""

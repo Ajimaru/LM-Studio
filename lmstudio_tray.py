@@ -1375,21 +1375,20 @@ class TrayIcon:
         return False
 
     def check_model(self):
-        """
-        Check LM Studio runtime/model status and update the tray icon.
+        """Check LM Studio runtime/model status and update tray icon.
 
         Updates the tray icon using this schema:
         - FAIL: neither daemon nor desktop app is installed
         - WARN: neither daemon nor desktop app is running
-        - INFO: daemon or desktop app is running, but no model is loaded
+        - INFO: daemon or desktop app is running, but no model loaded
         - OK: a model is loaded
 
-        Sends desktop notifications when status changes from a previous
-        non-None state, and logs status changes and errors.
+        Sends desktop notifications when status changes from a
+        previous non-None state, and logs status changes and errors.
 
         Returns:
-            bool: True to indicate the check completed (used for scheduled
-            callbacks).
+            bool: True to indicate the check completed (used for
+            scheduled callbacks).
         """
         try:
             lms_cmd = get_lms_cmd()

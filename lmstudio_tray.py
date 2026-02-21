@@ -6,16 +6,30 @@ daemon and desktop app. It displays visual indicators and notifications when
 status changes, and supports starting/stopping daemon and desktop app as well
 as viewing status information through a context menu.
 
-The script accepts optional command-line arguments:
-    - model: Model name to monitor (default: "no-model-passed")
-    - script_dir: Script directory for logging (default: current working dir)
-    - debug: Enable debug logging (optional positional "debug" or --debug)
-    - --auto-start-daemon: Start llmster daemon on launch
-    - --gui: Start LM Studio GUI on launch (stops daemon first)
-    - --version: Print version and exit
-    - --help: Show help and exit
+Usage:
+    lmstudio_tray.py [model] [script_dir] [debug] [options]
 
-Logging is written to ".logs/lmstudio_tray.log" in the script directory.
+Args:
+    model: Model name to monitor (optional, default: "no-model-passed")
+    script_dir: Script directory for logs and VERSION file (optional,
+        default: current working directory)
+    debug: Positional argument; use "debug" to enable debug logging
+        (optional)
+    --debug, -d: Enable debug logging (flag)
+    --auto-start-daemon, -a: Start llmster daemon on launch (flag)
+    --gui, -g: Start LM Studio GUI on launch, stops daemon first (flag)
+    --version, -v: Print version and exit (flag)
+    --help: Show help message and exit (flag)
+
+Returns:
+    None: This module runs as the main entry point.
+
+Raises:
+    FileNotFoundError: If VERSION file is missing (falls back to default).
+    OSError: If .logs directory cannot be created.
+
+Notes:
+    Logging is written to .logs/lmstudio_tray.log in the script directory.
 """
 
 # nosec B404 - subprocess is required for system process management
@@ -44,10 +58,15 @@ def load_version_from_dir(base_dir):
     """Load app version from the VERSION file.
 
     Args:
-        base_dir: Directory that contains the VERSION file.
+        base_dir (str): Directory path containing the VERSION file.
 
     Returns:
-        Version string from VERSION, or DEFAULT_APP_VERSION when missing.
+        str: Version string read from the VERSION file, or DEFAULT_APP_VERSION
+            if the file is missing or empty.
+
+    Raises:
+        OSError: If the VERSION file cannot be read; caught and returns
+            DEFAULT_APP_VERSION.
     """
     version_path = os.path.join(base_dir, "VERSION")
     try:
@@ -63,8 +82,30 @@ def load_version_from_dir(base_dir):
 def parse_args():
     """Parse command-line arguments from sys.argv.
 
+    This function reads all arguments and flags provided on the command line
+    via sys.argv and returns them as a structured namespace object.
+
+    Args:
+        None: Reads from sys.argv internally.
+
+    Command-line Arguments:
+        model (str): Model name to monitor; positional, optional.
+        script_dir (str): Script directory for logs; positional, optional.
+        debug_mode (str): Positional debug flag; use 'debug' to enable.
+        --debug, -d (bool): Flag to enable debug logging.
+        --auto-start-daemon, -a (bool): Start daemon on launch.
+        --gui, -g (bool): Start LM Studio GUI on launch.
+        --version, -v (bool): Print version and exit.
+        --help (bool): Print help message and exit.
+
     Returns:
-        argparse.Namespace from parse_known_args()[0].
+        argparse.Namespace: Parsed arguments as an object with attributes
+            matching argument names (e.g., namespace.model, namespace.debug).
+
+    Raises:
+        SystemExit: If --help or --version flags are used, or if the
+            argument parser encounters invalid arguments (handled by
+            argparse.ArgumentParser).
     """
     parser = argparse.ArgumentParser(
         description="LM Studio Tray Monitor",

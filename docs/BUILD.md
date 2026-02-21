@@ -184,7 +184,7 @@ pyinstaller lmstudio-tray-manager.spec
 
 ```bash
 # Run all tests with coverage
-pytest tests/ --cov=lmstudio_tray --cov-report=term-missing
+pytest tests/ --cov=lmstudio_tray --cov=build_binary --cov-report=term-missing
 
 # Test binary execution
 ./dist/lmstudio-tray-manager &

@@ -2130,8 +2130,10 @@ def test_trayicon_constructor_sets_indicator_and_timer(
     monkeypatch,
 ):
     """Initialize tray indicator properties and periodic timer."""
-    monkeypatch.setattr(tray_module.TrayIcon, "build_menu", lambda self: None)
-    monkeypatch.setattr(tray_module.TrayIcon, "check_model", lambda self: True)
+    monkeypatch.setattr(tray_module.TrayIcon, "build_menu", lambda _self: None)
+    monkeypatch.setattr(
+        tray_module.TrayIcon, "check_model", lambda _self: True
+    )
     timer_calls = []
     monkeypatch.setattr(
         tray_module.GLib,
@@ -2149,8 +2151,10 @@ def test_trayicon_constructor_sets_indicator_and_timer(
 
 def test_trayicon_constructor_idle_add(monkeypatch, tray_module):
     """Register idle callbacks when GLib supports idle_add."""
-    monkeypatch.setattr(tray_module.TrayIcon, "build_menu", lambda self: None)
-    monkeypatch.setattr(tray_module.TrayIcon, "check_model", lambda self: True)
+    monkeypatch.setattr(tray_module.TrayIcon, "build_menu", lambda _self: None)
+    monkeypatch.setattr(
+        tray_module.TrayIcon, "check_model", lambda _self: True
+    )
     monkeypatch.setattr(
         tray_module.GLib,
         "timeout_add_seconds",

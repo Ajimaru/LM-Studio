@@ -20,7 +20,7 @@ def _load_build_binary_module():
     return module
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def build_binary_module():
     """Load build_binary module for testing.
 
@@ -38,11 +38,11 @@ class _RunResult(SimpleNamespace):
 
 
 def test_get_gdk_pixbuf_loaders_found(
-    build_binary_module, monkeypatch
+    build_binary_module, monkeypatch, tmp_path
 ):
     """Return loaders dir and cache when found."""
-    loaders_dir = "/tmp/gdk-pixbuf/loaders"
-    cache_file = "/tmp/gdk-pixbuf/loaders.cache"
+    loaders_dir = str(tmp_path / "gdk-pixbuf" / "loaders")
+    cache_file = str(tmp_path / "gdk-pixbuf" / "loaders.cache")
 
     def fake_run(*_args, **_kwargs):
         return _RunResult(returncode=0, stdout=loaders_dir + "\n")
@@ -144,7 +144,8 @@ def test_build_binary_success_with_loaders(
     monkeypatch.setattr(
         build_binary_module,
         "get_gdk_pixbuf_loaders",
-        lambda: ("/tmp/loaders", "/tmp/loaders.cache"),
+        lambda: (str(tmp_path / "loaders"),
+                 str(tmp_path / "loaders.cache")),
     )
     monkeypatch.setattr(
         build_binary_module,
@@ -213,6 +214,34 @@ def test_build_binary_failure(monkeypatch, tmp_path, build_binary_module):
         build_binary_module.subprocess,
         "run",
         lambda *_a, **_k: _RunResult(returncode=1),
+    )
+
+    result = build_binary_module.build_binary()
+    assert result == 1
+
+
+def test_build_binary_timeout(build_binary_module, monkeypatch):
+    """Build returns 1 when subprocess times out."""
+    monkeypatch.setattr(
+        build_binary_module, "check_dependencies", lambda: None
+    )
+    monkeypatch.setattr(
+        build_binary_module,
+        "get_gdk_pixbuf_loaders",
+        lambda: (None, None),
+    )
+    monkeypatch.setattr(
+        build_binary_module, "get_hidden_imports", lambda: []
+    )
+    monkeypatch.setattr(
+        build_binary_module, "get_data_files", lambda: []
+    )
+
+    def fake_run_timeout(*_a, **_k):
+        raise build_binary_module.subprocess.TimeoutExpired("cmd", 3600)
+
+    monkeypatch.setattr(
+        build_binary_module.subprocess, "run", fake_run_timeout
     )
 
     result = build_binary_module.build_binary()

@@ -61,10 +61,17 @@ def check_dependencies():
         return
 
     print("Installing PyInstaller...")
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "pyinstaller"],
-        check=True
-    )
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "pyinstaller"],
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"\n❌ Failed to install PyInstaller: {e}")
+        sys.exit(1)
+    except OSError as e:
+        print(f"\n❌ Error running pip: {e}")
+        sys.exit(1)
 
 
 def get_hidden_imports():
@@ -177,7 +184,7 @@ def build_binary():
         result = subprocess.run(cmd, check=False, timeout=3600)
     except subprocess.TimeoutExpired:
         print("\n❌ Build failed: PyInstaller timed out after 3600 seconds")
-        sys.exit(1)
+        return 1
 
     if result.returncode == 0:
         binary_path = Path("dist/lmstudio-tray-manager")

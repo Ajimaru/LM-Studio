@@ -48,12 +48,13 @@ jobs:
       - name: Build standalone binary
         run: |
           set -euo pipefail
+          mkdir -p .build-cache
           ./build.sh
           if [[ ! -f "dist/lmstudio-tray-manager" ]]; then
             echo "Binary missing after build"
             exit 1
           fi
-          cp -a "dist/lmstudio-tray-manager" "/tmp/lmstudio-tray-manager"
+          cp -a "dist/lmstudio-tray-manager" ".build-cache/lmstudio-tray-manager"
 
       - name: Prepare release packages
         run: |
@@ -110,11 +111,11 @@ jobs:
             fi
           done
 
-          if [[ ! -f "/tmp/lmstudio-tray-manager" ]]; then
-            echo "Error: Binary not found at /tmp/lmstudio-tray-manager"
+          if [[ ! -f ".build-cache/lmstudio-tray-manager" ]]; then
+            echo "Error: Binary not found at .build-cache/lmstudio-tray-manager"
             exit 1
           fi
-          cp -a "/tmp/lmstudio-tray-manager" \
+          cp -a ".build-cache/lmstudio-tray-manager" \
             "$STAGE_DIR_BIN/lmstudio-tray-manager"
 
       - name: Create archives

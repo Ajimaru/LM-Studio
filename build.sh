@@ -37,10 +37,20 @@ NC='\033[0m' # No Color
 # Portable file size function (Linux stat -c%s, macOS/BSD stat -f%z)
 get_file_size() {
     local file="$1"
+    # Try Linux stat
     if stat -c%s "$file" 2>/dev/null; then
-        return
+        return 0
     fi
-    stat -f%z "$file" 2>/dev/null || stat -c%s "$file"
+    # Try macOS/BSD stat
+    if stat -f%z "$file" 2>/dev/null; then
+        return 0
+    fi
+    # Fallback: use wc -c
+    if wc -c < "$file" 2>/dev/null; then
+        return 0
+    fi
+    # If all methods fail, echo 0
+    echo 0
 }
 
 # Choose Python (prefer 3.10 if available)
@@ -53,7 +63,7 @@ else
     exit 1
 fi
 
-echo -e "${GREEN}✓${NC} Python found: $($PYTHON_BIN --version)"
+echo -e "${GREEN}✓${NC} Python found: \"$($PYTHON_BIN --version)\""
 
 # Create venv if missing (with system site-packages for gi)
 if [ -d ".venv" ]; then
@@ -85,7 +95,7 @@ fi
 # Run PyInstaller build
 echo
 echo "Running PyInstaller build..."
-python3 build_binary.py
+"$PYTHON_BIN" build_binary.py
 
 # Check if binary was created
 BINARY_PATH="dist/lmstudio-tray-manager"

@@ -97,6 +97,38 @@ def get_app_version():
 APP_VERSION = get_app_version()
 
 
+def get_authors():
+    """Load authors from AUTHORS file in script directory."""
+    authors_path = os.path.join(script_dir, "AUTHORS")
+    authors = []
+    try:
+        with open(authors_path, "r", encoding="utf-8") as authors_file:
+            for line in authors_file:
+                line = line.strip()
+                # Skip empty lines, comments, and headers
+                if (
+                    line
+                    and not line.startswith("#")
+                    and not line.startswith("<!--")
+                    and line.startswith("-")
+                ):
+                    # Extract name from markdown list item
+                    # Format: "- Name (@handle) - description"
+                    author = line[1:].strip()  # Remove leading "-"
+                    # Take only the name part before any description
+                    if " - " in author:
+                        author = author.split(" - ")[0].strip()
+                    # Remove GitHub handle if present
+                    if "(@" in author:
+                        author = author.split(" (@")[0].strip()
+                    if author:
+                        authors.append(author)
+    except OSError:
+        pass
+    # Fallback to maintainer if no authors found
+    return authors if authors else [APP_MAINTAINER]
+
+
 def get_lms_cmd():
     """Return the LM Studio CLI path if executable or resolve it from PATH."""
     if os.path.isfile(LMS_CLI) and os.access(LMS_CLI, os.X_OK):
@@ -1147,7 +1179,7 @@ class TrayIcon:
         dialog = Gtk.AboutDialog()
         dialog.set_program_name(APP_NAME)
         dialog.set_version(APP_VERSION)
-        dialog.set_authors([APP_MAINTAINER])
+        dialog.set_authors(get_authors())
         dialog.set_website(APP_REPOSITORY)
         dialog.set_website_label("GitHub Repository")
         dialog.set_comments(

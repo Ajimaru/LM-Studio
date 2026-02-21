@@ -395,6 +395,28 @@ def test_get_app_version_fallback_default(tray_module, tmp_path, monkeypatch):
     )  # nosec B101
 
 
+def test_get_authors_reads_file(tray_module, tmp_path, monkeypatch):
+    """Read authors from AUTHORS file."""
+    monkeypatch.setattr(tray_module, "script_dir", str(tmp_path))
+    authors_content = """# Contributors
+
+    - Ajimaru (@Ajimaru) - Project creator
+    - John Doe (@johndoe) - Contributor
+    <!-- Add your name here -->
+    """
+    (tmp_path / "AUTHORS").write_text(authors_content, encoding="utf-8")
+    authors = tray_module.get_authors()
+    assert authors == ["Ajimaru", "John Doe"]  # nosec B101
+
+
+def test_get_authors_fallback_maintainer(tray_module, tmp_path, monkeypatch):
+    """Fall back to APP_MAINTAINER when AUTHORS file is absent."""
+    monkeypatch.setattr(tray_module, "script_dir", str(tmp_path))
+    monkeypatch.setattr(tray_module, "APP_MAINTAINER", "TestMaintainer")
+    authors = tray_module.get_authors()
+    assert authors == ["TestMaintainer"]  # nosec B101
+
+
 def test_get_lms_cmd_prefers_lms_cli(tray_module, monkeypatch):
     """Prefer bundled LMS_CLI path when executable."""
     monkeypatch.setattr(tray_module.os.path, "isfile", lambda _p: True)
@@ -756,6 +778,11 @@ def test_show_about_dialog_contains_version_and_repo(tray_module, monkeypatch):
         tray_module,
         "APP_REPOSITORY",
         "https://github.com/test/repo"
+    )
+    monkeypatch.setattr(
+        tray_module,
+        "get_authors",
+        lambda: ["TestMaintainer"],
     )
     tray.show_about_dialog(None)
     dialog = tray_module.Gtk.AboutDialog.last_instance

@@ -327,6 +327,16 @@ class DummyUrlLib:
         self.raise_exc = raise_exc
         self.last_request = None
 
+    def build_opener(self, *handlers):
+        """Return a dummy opener and attach any provided handlers."""
+        opener = DummyUrlLib.DummyOpenerDirector(
+            self.payload,
+            self.raise_exc,
+        )
+        for handler in handlers:
+            opener.add_handler(handler)
+        return opener
+
     class Request:
         """Dummy request object matching urllib.request.Request."""
 
@@ -337,11 +347,6 @@ class DummyUrlLib:
 
     class HTTPSHandler:
         """Dummy HTTPS handler for urllib opener."""
-
-        def __init__(self):
-            """No-op initializer for handler stub."""
-            # __init__ implicitly returns None; no explicit return needed.
-            pass
 
     class DummyOpenerDirector:
         """Dummy opener that returns a fixed response payload."""
@@ -356,8 +361,9 @@ class DummyUrlLib:
             """Record a handler instance (unused)."""
             self.handlers.append(handler)
 
-        def open(self, _request, **_kwargs):
+    def open(self, _request, timeout=None, **_kwargs):
             """Return a dummy response or raise the configured exception."""
+            _ = timeout  # Unused but required for API compatibility
             if self.raise_exc is not None:
                 raise self.raise_exc
             return DummyUrlResponse(self.payload)
@@ -496,10 +502,22 @@ def test_get_latest_release_version_reads_tag(tray_module, monkeypatch):
     payload = json.dumps({"tag_name": "v9.9.9"}).encode("utf-8")
 
     class DummyResponse:
+        """
+        A mock response object for testing HTTP request simulations.
+
+        This class simulates the behavior of an HTTP response object,
+        implementing context manager protocol for use in with statements.
+        It stores data and provides a read() method to retrieve it.
+        """
         def __init__(self, data):
             self._data = data
 
         def read(self):
+            """Read and return the stored data.
+
+            Returns:
+                The data that was stored in this mock file object.
+            """
             return self._data
 
         def __enter__(self):
@@ -509,10 +527,41 @@ def test_get_latest_release_version_reads_tag(tray_module, monkeypatch):
             return False
 
     class DummyOpener:
+        """
+        A mock URL opener for testing HTTP requests.
+
+        This class simulates urllib.request.OpenerDirector behavior by
+        returning predefined response data without making actual network
+        calls.
+
+        Attributes:
+            _data: The data to be returned by the response object.
+
+        Methods:
+            open: Returns a DummyResponse containing the predefined data.
+        """
         def __init__(self, data):
             self._data = data
 
         def open(self, _request, **_kwargs):
+            """
+            Open a dummy HTTP request and return a response with
+            predefined data.
+
+            This method is used to mock HTTP requests in tests by
+            returning a DummyResponse containing the data stored in
+            this handler instance.
+
+            Args:
+                _request: The HTTP request object (unused in this mock
+                    implementation).
+                **_kwargs: Additional keyword arguments (unused in this
+                    mock implementation).
+
+            Returns:
+                DummyResponse: A response object with the predefined
+                    data.
+            """
             return DummyResponse(self._data)
 
     class DummyOpenerDirector:
@@ -2043,11 +2092,10 @@ def test_show_status_dialog_lms_not_found(tray_module, monkeypatch):
             self.secondary = ""
 
         def format_secondary_text(self, text):
-            """
-            Set the secondary text for the notification.
+            """Set the secondary text for the notification.
 
             Args:
-                text: The secondary/body text to display in the notification
+                text: The secondary/body text to display in the notification.
             """
             self.secondary = text
 
@@ -2060,8 +2108,7 @@ def test_show_status_dialog_lms_not_found(tray_module, monkeypatch):
             return 0
 
         def destroy(self):
-            """
-            Destroy the object and clean up resources.
+            """Destroy the object and clean up resources.
 
             This method is called when the object is no longer needed.
             It performs any necessary cleanup operations before the

@@ -356,11 +356,17 @@ class DummyUrlLib:
             """Record a handler instance (unused)."""
             self.handlers.append(handler)
 
-        def open(self, _request, _timeout=None):
+        def open(self, _request, **_kwargs):
             """Return a dummy response or raise the configured exception."""
             if self.raise_exc is not None:
                 raise self.raise_exc
             return DummyUrlResponse(self.payload)
+
+    def build_opener(self, _handler):
+        """Return a dummy opener for the given handler."""
+        return DummyUrlLib.DummyOpenerDirector(
+            self.payload, self.raise_exc
+        )
 
     def opener_director(self):
         """Return a dummy opener with this instance payload."""

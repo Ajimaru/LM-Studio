@@ -15,6 +15,7 @@ a display server or actual system dependencies during test execution.
 """
 
 import importlib.util
+import json
 import os
 import signal
 import subprocess  # nosec B404 - subprocess module is mocked in tests
@@ -295,6 +296,45 @@ class DummyGLibModule(ModuleType):
         return True
 
 
+class DummyUrlResponse:
+    """Dummy response object for urllib tests."""
+
+    def __init__(self, payload):
+        """Store response payload as bytes."""
+        self.payload = payload
+
+    def read(self):
+        """Return raw payload bytes."""
+        return self.payload
+
+    def __enter__(self):
+        """Support context manager protocol."""
+        return self
+
+    def __exit__(self, _exc_type, _exc, _tb):
+        """No cleanup required for dummy response."""
+        return False
+
+
+class DummyUrlLib:
+    """Dummy urllib.request module for version checks."""
+
+    def __init__(self, payload):
+        """Initialize with payload bytes for urlopen."""
+        self.payload = payload
+        self.last_request = None
+
+    def Request(self, url, headers=None):
+        """Capture the request and return a sentinel object."""
+        self.last_request = {"url": url, "headers": headers}
+        return url
+
+    def urlopen(self, _request, timeout=0):
+        """Return a dummy response for the request."""
+        _ = timeout
+        return DummyUrlResponse(self.payload)
+
+
 def _completed(returncode=0, stdout="", stderr=""):
     """Create a subprocess-like completed result object."""
     return SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
@@ -367,6 +407,9 @@ def _make_tray_instance(module):
     tray.menu = DummyMenu()
     tray.last_status = None
     tray.action_lock_until = 0.0
+    tray.last_update_version = None
+    tray.latest_update_version = None
+    tray.update_status = "Unknown"
     tray.build_menu = lambda: None
     return tray
 
@@ -393,6 +436,87 @@ def test_get_app_version_fallback_default(tray_module, tmp_path, monkeypatch):
         tray_module.get_app_version()
         == tray_module.DEFAULT_APP_VERSION
     )  # nosec B101
+
+
+def test_parse_version_handles_prefix(tray_module):
+    """Parse versions with a leading v prefix."""
+    assert tray_module.parse_version("v1.2.3") == (1, 2, 3)  # nosec B101
+
+
+def test_is_newer_version(tray_module):
+    """Compare version tuples for update checks."""
+    assert tray_module.is_newer_version("v1.2.3", "v1.2.4")  # nosec B101
+    assert not tray_module.is_newer_version("v1.2.3", "v1.2.3")  # nosec B101
+    assert not tray_module.is_newer_version("dev", "v1.2.3")  # nosec B101
+
+
+def test_get_latest_release_version_reads_tag(tray_module, monkeypatch):
+    """Extract tag_name from GitHub release payload."""
+    payload = json.dumps({"tag_name": "v9.9.9"}).encode("utf-8")
+    monkeypatch.setattr(tray_module, "urllib_request", DummyUrlLib(payload))
+    monkeypatch.setattr(
+        tray_module,
+        "APP_REPOSITORY",
+        "https://github.com/test/repo",
+    )
+    version, error = tray_module.get_latest_release_version()
+    assert version == "v9.9.9"  # nosec B101
+    assert error is None  # nosec B101
+
+
+def test_check_updates_notifies_once(tray_module, monkeypatch):
+    """Send a single update notification per latest version."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "v1.0.0")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    monkeypatch.setattr(
+        tray_module,
+        "get_latest_release_version",
+        lambda: ("v2.0.0", None),
+    )
+    monkeypatch.setattr(
+        tray_module,
+        "get_notify_send_cmd",
+        lambda: "/usr/bin/notify-send",
+    )
+    notify_calls = []
+
+    def capture_notify_call(cmd):
+        """Record notify command calls."""
+        notify_calls.append(cmd)
+
+    monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
+    tray.check_updates()
+    tray.check_updates()
+    assert len(notify_calls) == 1  # nosec B101
+    assert tray.update_status == "Update available"  # nosec B101
+
+
+def test_manual_check_updates_reports_up_to_date(tray_module, monkeypatch):
+    """Notify user when already up to date."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "v1.0.0")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    monkeypatch.setattr(
+        tray_module,
+        "get_latest_release_version",
+        lambda: ("v1.0.0", None),
+    )
+    monkeypatch.setattr(
+        tray_module,
+        "get_notify_send_cmd",
+        lambda: "/usr/bin/notify-send",
+    )
+    notify_calls = []
+
+    def capture_notify_call(cmd):
+        """Record notify command calls."""
+        notify_calls.append(cmd)
+
+    monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
+    tray.manual_check_updates(None)
+    assert len(notify_calls) == 1  # nosec B101
+    assert "Update Check" in notify_calls[0]  # nosec B101
 
 
 def test_get_authors_reads_file(tray_module, tmp_path, monkeypatch):
@@ -784,9 +908,10 @@ def test_show_about_dialog_contains_version_and_repo(tray_module, monkeypatch):
         "get_authors",
         lambda: ["TestMaintainer"],
     )
+    tray.update_status = "Up to date"
     tray.show_about_dialog(None)
     dialog = tray_module.Gtk.AboutDialog.last_instance
-    assert dialog.version == "v2.0.0"  # nosec B101
+    assert dialog.version == "v2.0.0 (Up to date)"  # nosec B101
     assert dialog.authors == ["TestMaintainer"]  # nosec B101
     assert dialog.website == "https://github.com/test/repo"  # nosec B101
     assert dialog.website_label == "GitHub Repository"  # nosec B101

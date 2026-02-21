@@ -22,6 +22,9 @@ import signal
 import logging
 import shutil
 import importlib
+import json
+from urllib import request as urllib_request
+from urllib import error as urllib_error
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -66,6 +69,7 @@ if DEBUG_MODE:
     logging.debug("Debug mode enabled - capturing warnings to log file")
 
 INTERVAL = 10
+UPDATE_CHECK_INTERVAL = 60 * 60 * 24
 
 # === GTK icon names from the icon browser ===
 ICON_OK = "emblem-default"         # ✅ Model loaded
@@ -127,6 +131,74 @@ def get_authors():
         pass
     # Fallback to maintainer if no authors found
     return authors if authors else [APP_MAINTAINER]
+
+
+def get_latest_release_api_url():
+    """Build GitHub latest-release API URL from APP_REPOSITORY."""
+    repo_prefix = "https://github.com/"
+    if not APP_REPOSITORY.startswith(repo_prefix):
+        return None
+    repo_path = APP_REPOSITORY[len(repo_prefix):].strip("/")
+    if not repo_path:
+        return None
+    return f"https://api.github.com/repos/{repo_path}/releases/latest"
+
+
+def parse_version(version):
+    """Parse a version string into a comparable tuple of integers."""
+    if not version:
+        return ()
+    cleaned = version.strip()
+    if cleaned.startswith("v"):
+        cleaned = cleaned[1:]
+    parts = []
+    for part in cleaned.split("."):
+        digits = ""
+        for char in part:
+            if char.isdigit():
+                digits += char
+            else:
+                break
+        if not digits:
+            break
+        parts.append(int(digits))
+    return tuple(parts)
+
+
+def is_newer_version(current, latest):
+    """Return True when latest is newer than current."""
+    current_parts = parse_version(current)
+    latest_parts = parse_version(latest)
+    if not current_parts or not latest_parts:
+        return False
+    return latest_parts > current_parts
+
+
+def get_latest_release_version():
+    """Fetch the latest GitHub release tag name."""
+    api_url = get_latest_release_api_url()
+    if not api_url:
+        logging.debug("Update check: invalid repository URL")
+        return None, "Invalid repository URL"
+
+    request = urllib_request.Request(
+        api_url,
+        headers={"User-Agent": "LM-Studio-Tray-Manager"},
+    )
+    logging.debug("Update check: requesting %s", api_url)
+    try:
+        with urllib_request.urlopen(request, timeout=10) as response:
+            payload = response.read().decode("utf-8")
+            data = json.loads(payload)
+            tag = data.get("tag_name")
+            logging.debug("Update check: latest tag %s", tag)
+            return (tag.strip(), None) if tag else (None, "No tag found")
+    except urllib_error.HTTPError as exc:
+        logging.debug("Update check: HTTP error %s", exc.code)
+        return None, f"HTTP {exc.code}"
+    except (urllib_error.URLError, OSError, ValueError):
+        logging.debug("Update check: network or parse error")
+        return None, "Network or parse error"
 
 
 def get_lms_cmd():
@@ -331,6 +403,10 @@ class TrayIcon:
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
         self.indicator.set_title("LM Studio Monitor")
         self.action_lock_until = 0.0
+        self.last_update_version = None
+        self.update_status = "Unknown"
+        self.latest_update_version = None
+        self.last_update_error = None
 
         # Create persistent menu (AppIndicator requires static menu)
         self.menu = Gtk.Menu()
@@ -339,6 +415,11 @@ class TrayIcon:
         self.last_status = None
         self.check_model()
         GLib.timeout_add_seconds(INTERVAL, self.check_model)
+        self.check_updates()
+        GLib.timeout_add_seconds(
+            UPDATE_CHECK_INTERVAL,
+            self.check_updates,
+        )
 
     def begin_action_cooldown(self, action_name, seconds=2.0):
         """Prevent rapid double-triggering of tray actions."""
@@ -422,6 +503,10 @@ class TrayIcon:
         status_item = Gtk.MenuItem(label="Show Status")
         status_item.connect("activate", self.show_status_dialog)
         self.menu.append(status_item)
+
+        update_item = Gtk.MenuItem(label="Check for updates")
+        update_item.connect("activate", self.manual_check_updates)
+        self.menu.append(update_item)
 
         about_item = Gtk.MenuItem(label="About")
         about_item.connect("activate", self.show_about_dialog)
@@ -1178,7 +1263,7 @@ class TrayIcon:
         """Show application information in a GTK dialog."""
         dialog = Gtk.AboutDialog()
         dialog.set_program_name(APP_NAME)
-        dialog.set_version(APP_VERSION)
+        dialog.set_version(self.get_version_label())
         dialog.set_authors(get_authors())
         dialog.set_website(APP_REPOSITORY)
         dialog.set_website_label("GitHub Repository")
@@ -1188,6 +1273,79 @@ class TrayIcon:
         dialog.set_modal(True)
         dialog.run()
         dialog.destroy()
+
+    def get_version_label(self):
+        """Return version text with update status for the About dialog."""
+        status = self.update_status or "Unknown"
+        return f"{APP_VERSION} ({status})"
+
+    def manual_check_updates(self, _widget):
+        """Run update check on demand and notify about the result."""
+        self.check_updates()
+        notify_cmd = get_notify_send_cmd()
+        if not notify_cmd:
+            return
+
+        status = self.update_status or "Unknown"
+        latest = self.latest_update_version
+        error = self.last_update_error
+        if status == "Update available" and latest:
+            message = (
+                f"New version available: {latest} (current {APP_VERSION})"
+            )
+        elif status == "Up to date":
+            message = f"You are up to date ({APP_VERSION})"
+        elif status == "Dev build":
+            message = "Dev build: update checks disabled"
+        else:
+            detail = f" ({error})" if error else ""
+            message = "Unable to check for updates." + detail
+
+        self._run_validated_command([notify_cmd, "Update Check", message])
+
+    def check_updates(self):
+        """Check GitHub for a newer release and notify the user."""
+        if APP_VERSION == DEFAULT_APP_VERSION:
+            self.update_status = "Dev build"
+            logging.debug("Update check skipped: dev build")
+            return True
+
+        latest, error = get_latest_release_version()
+        self.last_update_error = error
+        if not latest:
+            self.update_status = "Unknown"
+            logging.debug("Update check failed: %s", error)
+            return True
+
+        self.latest_update_version = latest
+        self.last_update_error = None
+
+        if is_newer_version(APP_VERSION, latest):
+            self.update_status = "Update available"
+        else:
+            self.update_status = "Up to date"
+        logging.debug(
+            "Update check status: %s (latest %s)",
+            self.update_status,
+            latest,
+        )
+
+        if not is_newer_version(APP_VERSION, latest):
+            return True
+
+        if self.last_update_version == latest:
+            return True
+
+        self.last_update_version = latest
+        notify_cmd = get_notify_send_cmd()
+        if notify_cmd:
+            message = (
+                f"New version available: {latest} (current {APP_VERSION})"
+            )
+            self._run_validated_command(
+                [notify_cmd, "Update Available", message]
+            )
+        return True
 
     def check_model(self):
         """

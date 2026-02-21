@@ -52,19 +52,23 @@ gdk_binaries, gdk_datas = get_gdk_pixbuf_paths()
 
 project_root = os.path.abspath(os.path.dirname(__file__))
 
+datas_base = [
+    (os.path.join(project_root, 'VERSION'), '.'),
+    (os.path.join(project_root, 'AUTHORS'), '.'),
+]
+
+optional_datas = []
+assets_dir = os.path.join(project_root, 'assets')
+if os.path.exists(assets_dir):
+    optional_datas.append((assets_dir, 'assets'))
+
+datas = datas_base + optional_datas + gdk_datas
+
 a = Analysis(
     [os.path.join(project_root, 'lmstudio_tray.py')],
     pathex=[project_root],
     binaries=gdk_binaries,
-    datas=[
-        (os.path.join(project_root, 'VERSION'), '.'),
-        (os.path.join(project_root, 'AUTHORS'), '.'),
-        (os.path.join(project_root, 'assets'), 'assets'),
-    ] + gdk_datas,
-    hiddenimports=[
-     ([('assets', 'assets')] if os.path.exists('assets') else [])
-     gdk_datas
-),
+    datas=datas,
     hiddenimports=[
         'gi.repository.cairo',
         'gi.repository.AyatanaAppIndicator3',

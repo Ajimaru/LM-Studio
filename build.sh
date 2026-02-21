@@ -139,8 +139,12 @@ if command -v upx &> /dev/null; then
     FINAL_SIZE_MB=$(echo "scale=2; $FINAL_SIZE / 1048576" | bc)
     TOTAL_SAVED=$(echo "scale=2; ($UNOPT_SIZE - $FINAL_SIZE) / 1048576" | bc)
     DIFF_BYTES=$((UNOPT_SIZE - FINAL_SIZE))
-    REDUCTION=$(echo "scale=1; ($DIFF_BYTES * 100) / $UNOPT_SIZE" | bc)
-    echo "Final size: ${FINAL_SIZE_MB} MB (saved ${TOTAL_SAVED} MB, ${REDUCTION}% reduction)"
+    if [ "$UNOPT_SIZE" -gt 0 ]; then
+        REDUCTION=$(echo "scale=1; ($DIFF_BYTES * 100) / $UNOPT_SIZE" | bc)
+        echo "Final size: ${FINAL_SIZE_MB} MB (saved ${TOTAL_SAVED} MB, ${REDUCTION}% reduction)"
+    else
+        echo "Final size: ${FINAL_SIZE_MB} MB (saved ${TOTAL_SAVED} MB)"
+    fi
 else
     echo -e "${YELLOW}Warning: upx not found, skipping compression${NC}"
     echo "Install upx for better compression: sudo apt install upx"

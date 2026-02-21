@@ -82,6 +82,7 @@ class DummyMessageDialog:
         self,
         parent=None,
         flags=None,
+        modal=None,
         message_type=None,
         buttons=None,
         text="",
@@ -89,6 +90,7 @@ class DummyMessageDialog:
         """Initialize a lightweight message dialog stub."""
         self.parent = parent
         self.flags = flags
+        self.modal = modal
         self.message_type = message_type
         self.buttons = buttons
         self.text = text

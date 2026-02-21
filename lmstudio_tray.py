@@ -1133,7 +1133,7 @@ class TrayIcon:
 
         dialog = Gtk.MessageDialog(
             parent=None,
-            flags=Gtk.DialogFlags.MODAL,
+            modal=True,
             message_type=Gtk.MessageType.INFO,
             buttons=Gtk.ButtonsType.OK,
             text="LM Studio Status"
@@ -1146,7 +1146,7 @@ class TrayIcon:
         """Show application information in a GTK dialog."""
         dialog = Gtk.MessageDialog(
             parent=None,
-            flags=Gtk.DialogFlags.MODAL,
+            modal=True,
             message_type=Gtk.MessageType.INFO,
             buttons=Gtk.ButtonsType.OK,
             text=APP_NAME

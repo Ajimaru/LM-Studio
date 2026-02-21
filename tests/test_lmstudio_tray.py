@@ -319,15 +319,19 @@ class DummyUrlResponse:
 class DummyUrlLib:
     """Dummy urllib.request module for version checks."""
 
-    def __init__(self, payload):
-        """Initialize with payload bytes for urlopen."""
+    def __init__(self, payload, raise_exc=None):
+        """Initialize with payload bytes and optional exception to raise."""
         self.payload = payload
+        self.raise_exc = raise_exc
         self.last_request = None
 
-    def request(self, url, headers=None):
-        """Capture the request and return a sentinel object."""
-        self.last_request = {"url": url, "headers": headers}
-        return url
+    class Request:
+        """Dummy request object matching urllib.request.Request."""
+
+        def __init__(self, url, headers=None):
+            """Accept url and headers; store for potential inspection."""
+            self.full_url = url
+            self.headers = headers or {}
 
     class HTTPSHandler:
         """Dummy HTTPS handler for urllib opener."""
@@ -339,9 +343,10 @@ class DummyUrlLib:
     class DummyOpenerDirector:
         """Dummy opener that returns a fixed response payload."""
 
-        def __init__(self, payload):
-            """Store payload for subsequent open calls."""
+        def __init__(self, payload, raise_exc=None):
+            """Store payload and optional exception for open calls."""
             self.payload = payload
+            self.raise_exc = raise_exc
             self.handlers = []
 
         def add_handler(self, handler):
@@ -349,13 +354,17 @@ class DummyUrlLib:
             self.handlers.append(handler)
 
         def open(self, _request, timeout=0):
-            """Return a dummy response for the request."""
+            """Return a dummy response or raise the configured exception."""
             _ = timeout
+            if self.raise_exc is not None:
+                raise self.raise_exc
             return DummyUrlResponse(self.payload)
 
-    def opener_director(self):
+    def OpenerDirector(self):
         """Return a dummy opener with this instance payload."""
-        return DummyUrlLib.DummyOpenerDirector(self.payload)
+        return DummyUrlLib.DummyOpenerDirector(
+            self.payload, self.raise_exc
+        )
 
 
 def _completed(returncode=0, stdout="", stderr=""):
@@ -481,6 +490,57 @@ def test_get_latest_release_version_reads_tag(tray_module, monkeypatch):
     version, error = tray_module.get_latest_release_version()
     assert version == "v9.9.9"  # nosec B101
     assert error is None  # nosec B101
+
+
+def test_get_latest_release_version_http_error(tray_module, monkeypatch):
+    """Return HTTP error code string on HTTPError."""
+    import urllib.error
+
+    exc = urllib.error.HTTPError(
+        url="https://api.github.com",
+        code=404,
+        msg="Not Found",
+        hdrs={},
+        fp=None,
+    )
+    monkeypatch.setattr(
+        tray_module, "urllib_request", DummyUrlLib(b"", raise_exc=exc)
+    )
+    version, error = tray_module.get_latest_release_version()
+    assert version is None  # nosec B101
+    assert error == "HTTP 404"  # nosec B101
+
+
+def test_get_latest_release_version_url_error(tray_module, monkeypatch):
+    """Return network error message on URLError."""
+    import urllib.error
+
+    exc = urllib.error.URLError(reason="connection refused")
+    monkeypatch.setattr(
+        tray_module, "urllib_request", DummyUrlLib(b"", raise_exc=exc)
+    )
+    version, error = tray_module.get_latest_release_version()
+    assert version is None  # nosec B101
+    assert error == "Network or parse error"  # nosec B101
+
+
+def test_get_latest_release_version_invalid_json(tray_module, monkeypatch):
+    """Return parse error message when response body is not valid JSON."""
+    monkeypatch.setattr(
+        tray_module, "urllib_request", DummyUrlLib(b"not valid json")
+    )
+    version, error = tray_module.get_latest_release_version()
+    assert version is None  # nosec B101
+    assert error == "Network or parse error"  # nosec B101
+
+
+def test_get_latest_release_version_no_tag(tray_module, monkeypatch):
+    """Return no-tag error when tag_name is absent from JSON response."""
+    payload = json.dumps({"other_field": "value"}).encode("utf-8")
+    monkeypatch.setattr(tray_module, "urllib_request", DummyUrlLib(payload))
+    version, error = tray_module.get_latest_release_version()
+    assert version is None  # nosec B101
+    assert error == "No tag found"  # nosec B101
 
 
 def test_check_updates_notifies_once(tray_module, monkeypatch):

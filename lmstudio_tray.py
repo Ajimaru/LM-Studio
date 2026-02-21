@@ -1359,17 +1359,15 @@ class TrayIcon:
         self.latest_update_version = latest
         self.last_update_error = None
 
-        if is_newer_version(APP_VERSION, latest):
-            self.update_status = "Update available"
-        else:
-            self.update_status = "Up to date"
+        newer = is_newer_version(APP_VERSION, latest)
+        self.update_status = "Update available" if newer else "Up to date"
         logging.debug(
             "Update check status: %s (latest %s)",
             self.update_status,
             latest,
         )
 
-        if not is_newer_version(APP_VERSION, latest):
+        if not newer:
             return False
 
         if self.last_update_version == latest:

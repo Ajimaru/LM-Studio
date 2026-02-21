@@ -244,13 +244,13 @@ def main():
         f.write("LM Studio Tray Monitor Log\n")
         f.write(f"Started: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("="*80 + "\n")
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        filemode='a',
-        force=True,
-    )
+
+    logging.basicConfig(
+        filename=log_file,
         level=LOG_LEVEL,
         format="%(asctime)s - %(levelname)s - %(message)s",
-        filemode='a'
+        filemode='a',
+        force=True
     )
 
     # Redirect Python warnings to log file in debug mode

@@ -1301,6 +1301,24 @@ class TrayIcon:
         self.check_updates()
         return True
 
+    def _format_update_check_message(self, status, latest, error):
+        """Build the update check notification message."""
+        if status == "Update available" and latest:
+            return (
+                f"New version available: {latest} (current {APP_VERSION})"
+            )
+
+        messages = {
+            "Up to date": f"You are up to date ({APP_VERSION})",
+            "Dev build": "Dev build: update checks disabled",
+        }
+        message = messages.get(status)
+        if message:
+            return message
+
+        detail = f" ({error})" if error else ""
+        return "Unable to check for updates." + detail
+
     def manual_check_updates(self, _widget):
         """Run update check on demand and notify about the result."""
         notified = self.check_updates()
@@ -1311,17 +1329,7 @@ class TrayIcon:
         status = self.update_status or "Unknown"
         latest = self.latest_update_version
         error = self.last_update_error
-        if status == "Update available" and latest:
-            message = (
-                f"New version available: {latest} (current {APP_VERSION})"
-            )
-        elif status == "Up to date":
-            message = f"You are up to date ({APP_VERSION})"
-        elif status == "Dev build":
-            message = "Dev build: update checks disabled"
-        else:
-            detail = f" ({error})" if error else ""
-            message = "Unable to check for updates." + detail
+        message = self._format_update_check_message(status, latest, error)
 
         self._run_validated_command([notify_cmd, "Update Check", message])
 

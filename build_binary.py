@@ -92,15 +92,9 @@ def check_dependencies():
 def get_hidden_imports():
     """Return list of hidden imports needed for GTK3/GObject.
 
-    Args:
-        None
-
     Returns:
         list[str]: Hidden import module names required for GTK3/GObject
             functionality in the standalone binary.
-
-    Raises:
-        None
     """
     return [
         "gi",

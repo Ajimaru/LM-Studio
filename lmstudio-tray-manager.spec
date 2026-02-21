@@ -54,7 +54,11 @@ a = Analysis(
     ['lmstudio_tray.py'],
     pathex=[],
     binaries=gdk_binaries,
-    datas=[('VERSION', '.'), ('AUTHORS', '.'), ('assets', 'assets')] + gdk_datas,
+datas=(
+    [('VERSION', '.'), ('AUTHORS', '.')]
+     ([('assets', 'assets')] if os.path.exists('assets') else [])
+     gdk_datas
+),
     hiddenimports=[
         'gi',
         'gi.repository',

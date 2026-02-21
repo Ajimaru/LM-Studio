@@ -112,6 +112,60 @@ class DummyMessageDialog:
         self.destroyed = True
 
 
+class DummyAboutDialog:
+    """Dummy about dialog to capture interactions."""
+    last_instance = None
+
+    def __init__(self):
+        """Initialize a lightweight about dialog stub."""
+        self.program_name = ""
+        self.version = ""
+        self.authors = []
+        self.website = ""
+        self.website_label = ""
+        self.comments = ""
+        self.modal = False
+        self.ran = False
+        self.destroyed = False
+        DummyAboutDialog.last_instance = self
+
+    def set_program_name(self, name):
+        """Store program name."""
+        self.program_name = name
+
+    def set_version(self, version):
+        """Store version."""
+        self.version = version
+
+    def set_authors(self, authors):
+        """Store authors list."""
+        self.authors = authors
+
+    def set_website(self, url):
+        """Store website URL."""
+        self.website = url
+
+    def set_website_label(self, label):
+        """Store website label."""
+        self.website_label = label
+
+    def set_comments(self, comments):
+        """Store comments."""
+        self.comments = comments
+
+    def set_modal(self, modal):
+        """Store modal setting."""
+        self.modal = modal
+
+    def run(self):
+        """Mark the dialog as shown."""
+        self.ran = True
+
+    def destroy(self):
+        """Mark the dialog as destroyed."""
+        self.destroyed = True
+
+
 class DummyIndicator:
     """Dummy indicator capturing status and menu updates."""
 
@@ -213,6 +267,7 @@ class DummyGtkModule(ModuleType):
     MenuItem = DummyMenuItem
     SeparatorMenuItem = DummySeparatorMenuItem
     MessageDialog = DummyMessageDialog
+    AboutDialog = DummyAboutDialog
 
     @staticmethod
     def main_quit():
@@ -696,10 +751,22 @@ def test_show_about_dialog_contains_version_and_repo(tray_module, monkeypatch):
     """Show about dialog including version and repository metadata."""
     tray = _make_tray_instance(tray_module)
     monkeypatch.setattr(tray_module, "APP_VERSION", "v2.0.0")
+    monkeypatch.setattr(tray_module, "APP_MAINTAINER", "TestMaintainer")
+    monkeypatch.setattr(
+        tray_module,
+        "APP_REPOSITORY",
+        "https://github.com/test/repo"
+    )
     tray.show_about_dialog(None)
-    dialog = tray_module.Gtk.MessageDialog.last_instance
-    assert "v2.0.0" in dialog.secondary  # nosec B101
-    assert "Repository:" in dialog.secondary  # nosec B101
+    dialog = tray_module.Gtk.AboutDialog.last_instance
+    assert dialog.version == "v2.0.0"  # nosec B101
+    assert dialog.authors == [
+        "TestMaintainer <https://github.com/TestMaintainer>"
+    ]  # nosec B101
+    assert dialog.website == "https://github.com/test/repo"  # nosec B101
+    assert dialog.website_label == "GitHub Repository"  # nosec B101
+    assert dialog.ran  # nosec B101
+    assert dialog.destroyed  # nosec B101
 
 
 def test_check_model_fail_warn_info_ok(tray_module, monkeypatch):

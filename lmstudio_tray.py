@@ -1144,20 +1144,19 @@ class TrayIcon:
 
     def show_about_dialog(self, _widget):
         """Show application information in a GTK dialog."""
-        dialog = Gtk.MessageDialog(
-            parent=None,
-            modal=True,
-            message_type=Gtk.MessageType.INFO,
-            buttons=Gtk.ButtonsType.OK,
-            text=APP_NAME
+        dialog = Gtk.AboutDialog()
+        dialog.set_program_name(APP_NAME)
+        dialog.set_version(APP_VERSION)
+        author_link = (
+            f"{APP_MAINTAINER} <https://github.com/{APP_MAINTAINER}>"
         )
-        dialog.format_secondary_text(
-            f"Version: {APP_VERSION}\n"
-            f"Maintainer: {APP_MAINTAINER}\n"
-            "Purpose: Monitors and controls LM Studio daemon"
-            " and desktop app.\n"
-            f"Repository: {APP_REPOSITORY}"
+        dialog.set_authors([author_link])
+        dialog.set_website(APP_REPOSITORY)
+        dialog.set_website_label("GitHub Repository")
+        dialog.set_comments(
+            "Monitors and controls LM Studio daemon and desktop app."
         )
+        dialog.set_modal(True)
         dialog.run()
         dialog.destroy()
 

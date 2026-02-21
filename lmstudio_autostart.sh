@@ -75,7 +75,6 @@ Options:
     -d, --debug       Enable debug output and Bash trace (also terminal output)
     -h, --help        Show this help and exit
     -L, --list-models List local models; in TTY: interactive selection with 30s auto-skip (no LM Studio start before selection)
-    -m, --model NAME  Model label for tray monitoring
     -g, --gui         Start the LM Studio desktop app and tray monitor
 
 Environment variables:
@@ -90,13 +89,10 @@ Exit codes:
     3  No models found (-L mode)
 
 Examples:
-    $(basename "$0")                             # Start llmster + tray monitor
-    $(basename "$0") --debug                     # With debug output
-    $(basename "$0") --model qwen2.5:7b-instruct # Monitor this model label in tray
-    $(basename "$0") -m qwen2.5:7b-instruct      # Short form
-    $(basename "$0") -m                          # Flag without name: uses default label
-    $(basename "$0") -L                          # Interactive model selection (in TTY) or list (without TTY)
-    $(basename "$0") --gui                       # Stop llmster (if running), then start LM Studio desktop app + tray monitor
+    $(basename "$0")         # Start llmster + tray monitor
+    $(basename "$0") --debug # With debug output
+    $(basename "$0") -L      # Interactive model selection (in TTY) or list (without TTY)
+    $(basename "$0") --gui   # Stop llmster (if running), then start LM Studio desktop app + tray monitor
 EOF
 }
 
@@ -170,11 +166,9 @@ list_models() {
     return 0
 }
 
-# === Parse arguments (Debug flag, Model name) ===
+# === Parse arguments ===
 DEBUG_FLAG=0
-MODEL=""
 LIST_MODELS=0
-MODEL_EXPLICIT=0
 GUI_FLAG=0
 SELECT_TIMEOUT="${LM_AUTOSTART_SELECT_TIMEOUT:-30}"
 while [ $# -gt 0 ]; do
@@ -187,14 +181,6 @@ while [ $# -gt 0 ]; do
             LIST_MODELS=1; shift ;;
         --gui|-g)
             GUI_FLAG=1; shift ;;
-        --model|-m)
-            if [ -n "${2:-}" ] && [ "${2#-}" != "$2" ]; then
-                shift
-            elif [ -n "${2:-}" ]; then
-                MODEL="$2"; MODEL_EXPLICIT=1; shift 2
-            else
-                shift
-            fi ;;
         --)
             shift; break ;;
         -*)
@@ -203,7 +189,7 @@ while [ $# -gt 0 ]; do
             exit 2 ;;
         *)
             if [ "$DEBUG_FLAG" = "1" ] || [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
-                echo "Note: Positional argument '$1' is ignored. Please use --model/-m NAME." >&2
+                echo "Note: Positional argument '$1' is ignored." >&2
             fi
             shift ;;
     esac
@@ -670,11 +656,7 @@ if [ "$GUI_FLAG" -eq 1 ]; then
     fi
     echo "$(date '+%Y-%m-%d %H:%M:%S') 🖥️ Starting LM Studio GUI..."
     start_gui || true
-    if [ -n "$MODEL" ]; then
-        TRAY_MODEL="$MODEL"
-    else
-        TRAY_MODEL="no-model"
-    fi
+    TRAY_MODEL="no-model"
 else
     # Default mode: start llmster headless daemon + tray
     echo "$(date '+%Y-%m-%d %H:%M:%S') 🚀 Starting llmster headless daemon..."
@@ -688,13 +670,7 @@ else
     fi
     echo "$(date '+%Y-%m-%d %H:%M:%S') ℹ️ Use --gui to stop llmster and start LM Studio desktop app."
 
-    if [ -n "$MODEL" ]; then
-        load_model_into_daemon "$MODEL" || true
-        echo "$(date '+%Y-%m-%d %H:%M:%S') ℹ️ Model label '$MODEL' will be monitored in tray."
-        TRAY_MODEL="$MODEL"
-    else
-        TRAY_MODEL="no-model"
-    fi
+    TRAY_MODEL="no-model"
 fi
 
 # Pass debug flag to tray script if enabled

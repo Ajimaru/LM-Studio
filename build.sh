@@ -111,12 +111,9 @@ echo "Build Optimization"
 echo "======================================"
 echo
 
-# Get unoptimized size
-UNOPT_SIZE=$(get_file_size "$BINARY_PATH")
-UNOPT_SIZE_MB=$(echo "scale=2; $UNOPT_SIZE / 1048576" | bc)
-echo "Unoptimized size: ${UNOPT_SIZE_MB} MB"
-
-# Strip debug symbols
+# Ensure bc is available for size calculations
+if ! command -v bc >/dev/null 2>&1; then
+    echo -e "${RED}Error: 'bc' is required for size calculations, \
 if command -v strip &> /dev/null; then
     echo -e "${GREEN}Stripping debug symbols...${NC}"
     strip "$BINARY_PATH"

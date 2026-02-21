@@ -217,7 +217,11 @@ def build_binary():
         print("\n❌ Build completed but binary not found!")
         return 1
 
-    size_mb = binary_path.stat().st_size / (1024 * 1024)
+    try:
+        size_mb = binary_path.stat().st_size / (1024 * 1024)
+    except OSError:
+        size_mb = 0.0
+
     print("\n✅ Build successful!")
     print(f"Binary location: {binary_path}")
     print(f"Binary size: {size_mb:.2f} MB")

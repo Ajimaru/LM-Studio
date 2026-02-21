@@ -353,9 +353,9 @@ class DummyUrlLib:
             """Record a handler instance (unused)."""
             self.handlers.append(handler)
 
-        def open(self, _request, timeout=0):
+        def open(self, _request, timeout=None):
             """Return a dummy response or raise the configured exception."""
-            _ = timeout
+            _ = timeout  # Unused but required for API compatibility
             if self.raise_exc is not None:
                 raise self.raise_exc
             return DummyUrlResponse(self.payload)
@@ -571,6 +571,29 @@ def test_check_updates_notifies_once(tray_module, monkeypatch):
     assert tray.update_status == "Update available"  # nosec B101
 
 
+def test_check_updates_dev_build(tray_module, monkeypatch):
+    """Set update_status to 'Dev build' when running a dev build."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "dev")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    tray.check_updates()
+    assert tray.update_status == "Dev build"  # nosec B101
+
+
+def test_check_updates_error_path(tray_module, monkeypatch):
+    """Set update_status to 'Unknown' when version fetch fails."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "v1.0.0")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    monkeypatch.setattr(
+        tray_module,
+        "get_latest_release_version",
+        lambda: (None, "Network error"),
+    )
+    tray.check_updates()
+    assert tray.update_status == "Unknown"  # nosec B101
+
+
 def test_manual_check_updates_reports_up_to_date(tray_module, monkeypatch):
     """Notify user when already up to date."""
     tray = _make_tray_instance(tray_module)
@@ -595,9 +618,134 @@ def test_manual_check_updates_reports_up_to_date(tray_module, monkeypatch):
     monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
     tray.manual_check_updates(None)
     assert len(notify_calls) == 1  # nosec B101
-    assert "Update Check" in notify_calls[0]  # nosec B101
+    assert "Update Check" in str(notify_calls[0])  # nosec B101
 
 
+def test_manual_check_updates_reports_update_available(
+    tray_module,
+    monkeypatch,
+):
+    """Notify user when an update is available."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "v1.0.0")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    monkeypatch.setattr(
+        tray_module,
+        "get_latest_release_version",
+        lambda: ("v2.0.0", None),
+    )
+    monkeypatch.setattr(
+        tray_module,
+        "get_notify_send_cmd",
+        lambda: "/usr/bin/notify-send",
+    )
+    notify_calls = []
+
+    def capture_notify_call(cmd):
+        """Record notify command calls."""
+        notify_calls.append(cmd)
+
+    monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
+    tray.manual_check_updates(None)
+    assert len(notify_calls) == 1  # nosec B101
+    msg = str(notify_calls[0])
+    assert "Update Check" in msg  # nosec B101
+    assert "Update available" in msg  # nosec B101
+    assert "v2.0.0" in msg  # nosec B101
+
+
+def test_manual_check_updates_reports_dev_build(tray_module, monkeypatch):
+    """Notify user when running a development build."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "dev")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    monkeypatch.setattr(
+        tray_module,
+        "get_latest_release_version",
+        lambda: ("v2.0.0", None),
+    )
+    monkeypatch.setattr(
+        tray_module,
+        "get_notify_send_cmd",
+        lambda: "/usr/bin/notify-send",
+    )
+    notify_calls = []
+
+    def capture_notify_call(cmd):
+        """Record notify command calls."""
+        notify_calls.append(cmd)
+
+    monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
+    tray.manual_check_updates(None)
+    assert len(notify_calls) == 1  # nosec B101
+    msg = str(notify_calls[0])
+    assert "Update Check" in msg  # nosec B101
+    assert "Dev build" in msg  # nosec B101
+
+
+def test_manual_check_updates_reports_error_with_details(
+    tray_module,
+    monkeypatch,
+):
+    """Notify user when update check fails with error details."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "v1.0.0")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    monkeypatch.setattr(
+        tray_module,
+        "get_latest_release_version",
+        lambda: (None, "Network error"),
+    )
+    monkeypatch.setattr(
+        tray_module,
+        "get_notify_send_cmd",
+        lambda: "/usr/bin/notify-send",
+    )
+    notify_calls = []
+
+    def capture_notify_call(cmd):
+        """Record notify command calls."""
+        notify_calls.append(cmd)
+
+    monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
+    tray.manual_check_updates(None)
+    assert len(notify_calls) == 1  # nosec B101
+    msg = str(notify_calls[0])
+    assert "Update Check" in msg  # nosec B101
+    assert "Error" in msg  # nosec B101
+    assert "Network error" in msg  # nosec B101
+
+
+def test_manual_check_updates_reports_error_without_details(
+    tray_module,
+    monkeypatch,
+):
+    """Notify user when update check fails without details."""
+    tray = _make_tray_instance(tray_module)
+    monkeypatch.setattr(tray_module, "APP_VERSION", "v1.0.0")
+    monkeypatch.setattr(tray_module, "DEFAULT_APP_VERSION", "dev")
+    monkeypatch.setattr(
+        tray_module,
+        "get_latest_release_version",
+        lambda: (None, None),
+    )
+    monkeypatch.setattr(
+        tray_module,
+        "get_notify_send_cmd",
+        lambda: "/usr/bin/notify-send",
+    )
+    notify_calls = []
+
+    def capture_notify_call(cmd):
+        """Record notify command calls."""
+        notify_calls.append(cmd)
+
+    monkeypatch.setattr(tray, "_run_validated_command", capture_notify_call)
+    tray.manual_check_updates(None)
+    assert len(notify_calls) == 1  # nosec B101
+    msg = str(notify_calls[0])
+    assert "Update Check" in msg  # nosec B101
+    assert "Error checking for updates" in msg  # nosec B101
 def test_get_authors_reads_file(tray_module, tmp_path, monkeypatch):
     """Read authors from AUTHORS file."""
     monkeypatch.setattr(tray_module, "script_dir", str(tmp_path))

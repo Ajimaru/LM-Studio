@@ -324,7 +324,12 @@ if [ "${LM_AUTOSTART_DEBUG:-0}" = "1" ]; then
 fi
 
 # === Logging configuration ===
-: > "$LOGFILE"
+{
+    echo "================================================================================"
+    echo "LM Studio Autostart Log"
+    echo "Started: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "================================================================================"
+} > "$LOGFILE"
 if [ "$DEBUG_FLAG" = "1" ]; then
     # Debug mode: terminal + log file (with all traces)
     exec > >(tee -a "$LOGFILE") 2>&1
@@ -375,7 +380,7 @@ run_llmster_cmd_expect_state() {
         fi
     fi
 
-    return $rc
+    return "$rc"
 }
 
 start_llmster() {
@@ -418,7 +423,7 @@ start_llmster() {
     fi
 
     set -e
-    return $rc
+    return "$rc"
 }
 
 stop_llmster() {
@@ -470,7 +475,7 @@ stop_llmster() {
     fi
 
     set -e
-    return $rc
+    return "$rc"
 }
 
 get_lms_cmd() {

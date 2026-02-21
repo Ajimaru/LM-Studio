@@ -131,7 +131,10 @@ def parse_args():
         action="store_true",
         help="Print version and exit"
     )
-    return parser.parse_known_args()[0]
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        parser.error(f"unrecognized arguments: {' '.join(unknown)}")
+    return args
 
 
 # === Module-level defaults for args-derived globals ===

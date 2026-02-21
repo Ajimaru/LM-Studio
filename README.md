@@ -176,8 +176,9 @@ This setup script:
 ./lmstudio-tray-manager -d
 
 # Combine short flags
-./lmstudio-tray-manager -d -a  # debug + auto-start daemon
-./lmstudio-tray-manager -dg    # debug + gui (if combined parsing allowed)
+./lmstudio-tray-manager -d -a   # debug + auto-start daemon
+./lmstudio-tray-manager -dg     # debug + gui
+./lmstudio-tray-manager -dga    # debug + gui + auto-start daemon
 
 # Check daemon status
 lms ps

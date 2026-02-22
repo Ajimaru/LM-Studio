@@ -28,11 +28,12 @@ def get_gdk_pixbuf_paths():
             loaders_dir = result.stdout.strip()
             if os.path.exists(loaders_dir):
                 # Add individual .so loader files
-                for loader_file in glob.glob(os.path.join(
-                    loaders_dir, '*.so*'
-                )):
-                    binaries.append((loader_file,
-                                     'lib/gdk-pixbuf/loaders'))
+                seen = set()
+                for loader_file in glob.glob(os.path.join(loaders_dir, '*.so*')):
+                    real_loader = os.path.realpath(loader_file)
+                    if os.path.exists(real_loader) and real_loader not in seen:
+                        seen.add(real_loader)
+                        binaries.append((real_loader, 'lib/gdk-pixbuf/loaders'))
 
                 # Find loaders.cache
                 cache_file = os.path.join(

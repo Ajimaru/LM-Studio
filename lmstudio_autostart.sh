@@ -680,15 +680,6 @@ elif [ -x "$SCRIPT_DIR/dist/lmstudio-tray-manager" ]; then
     TRAY_BIN="$SCRIPT_DIR/dist/lmstudio-tray-manager"
 fi
 
-TRAY_ARGS=()
-if [ "$DEBUG_FLAG" = "1" ]; then
-    TRAY_ARGS+=("--debug")
-fi
-if [ "$GUI_FLAG" -eq 1 ]; then
-    TRAY_ARGS+=("--gui")
-else
-    TRAY_ARGS+=("--auto-start-daemon")
-fi
 TRAY_ARGS=("$TRAY_MODEL" "$SCRIPT_DIR")
 if [ "$DEBUG_FLAG" = "1" ]; then
     TRAY_ARGS+=("--debug")

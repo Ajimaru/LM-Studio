@@ -44,11 +44,6 @@ try:
 except ImportError:
     gi = None
 
-# ... inside main(), before gi.require_version calls:
-# if gi is None:
-#     print("Error: PyGObject (gi) is not installed.", file=sys.stderr)
-#     sys.exit(1)
-
 DEFAULT_APP_VERSION = "dev"
 
 
@@ -225,6 +220,21 @@ def main():
     if args.version:
         print(load_version_from_dir(script_dir))
         sys.exit(0)
+
+    if gi is None:
+        print(
+            "Error: PyGObject (gi) is not installed.\n"
+            "This application requires the 'gi' module provided by "
+            "PyGObject.\n"
+            "Please install the appropriate package for your system, "
+            "for example:\n"
+            "  - Debian/Ubuntu: sudo apt install python3-gi "
+            "gir1.2-gtk-3.0\n"
+            "  - Fedora: sudo dnf install python3-gobject gtk3\n"
+            "  - Arch: sudo pacman -S python-gobject gtk3",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     gi.require_version("Gtk", "3.0")
     gi.require_version("AyatanaAppIndicator3", "0.1")

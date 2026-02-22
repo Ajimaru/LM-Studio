@@ -150,16 +150,19 @@ def get_data_files():
     data_files = []
 
     # Include VERSION file
-    if Path("VERSION").exists():
-        data_files.append(("VERSION", "."))
+    version_path = Path("VERSION")
+    if version_path.exists():
+        data_files.append((str(version_path.resolve()), "."))
 
     # Include AUTHORS file
-    if Path("AUTHORS").exists():
-        data_files.append(("AUTHORS", "."))
+    authors_path = Path("AUTHORS")
+    if authors_path.exists():
+        data_files.append((str(authors_path.resolve()), "."))
 
     # Include assets directory if it exists
-    if Path("assets").exists():
-        data_files.append(("assets", "assets"))
+    assets_path = Path("assets")
+    if assets_path.exists():
+        data_files.append((str(assets_path.resolve()), "assets"))
 
     return data_files
 
@@ -234,11 +237,12 @@ def build_binary():
         for so_file in glob.glob(os.path.join(loaders_dir, "*.so*")):
             cmd.extend([
                 "--add-binary",
-                f"{so_file}{os.pathsep}lib/gdk-pixbuf/loaders"
+                f"{os.path.realpath(so_file)}{os.pathsep}"
+                "lib/gdk-pixbuf/loaders"
             ])
         cmd.extend([
             "--add-data",
-            f"{cache_file}{os.pathsep}lib/gdk-pixbuf"
+            f"{os.path.realpath(cache_file)}{os.pathsep}lib/gdk-pixbuf"
         ])
         print("✓ Added GdkPixbuf loaders to binary\n")
     else:

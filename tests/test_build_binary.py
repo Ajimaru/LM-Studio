@@ -64,6 +64,11 @@ def test_get_gdk_pixbuf_loaders_found(
         build_binary_module.subprocess, "run", fake_run
     )
     monkeypatch.setattr(
+        build_binary_module.shutil,
+        "which",
+        lambda _name: "/usr/bin/pkg-config",
+    )
+    monkeypatch.setattr(
         build_binary_module.os.path, "isdir", fake_isdir
     )
     monkeypatch.setattr(
@@ -84,6 +89,11 @@ def test_get_gdk_pixbuf_loaders_missing(
     build_binary_module, monkeypatch
 ):
     """Return None when loaders cannot be located."""
+    monkeypatch.setattr(
+        build_binary_module.shutil,
+        "which",
+        lambda _name: "/usr/bin/pkg-config",
+    )
     monkeypatch.setattr(
         build_binary_module.subprocess,
         "run",

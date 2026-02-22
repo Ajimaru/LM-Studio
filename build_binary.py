@@ -12,7 +12,7 @@ import os
 import shlex
 import shutil
 import sys
-import subprocess
+import subprocess  # nosec B404 - required for build tooling
 from pathlib import Path
 
 
@@ -27,15 +27,16 @@ def get_gdk_pixbuf_loaders():
             error occurs.
     """
     # Validate pkg-config exists
-    if not shutil.which("pkg-config"):
+    pkg_config = shutil.which("pkg-config")
+    if not pkg_config:
         print("⚠ pkg-config not found")
         return None, None
 
     try:
         # Get loaders directory from pkg-config
         # nosec B603 - pkg-config path validated via shutil.which
-        result = subprocess.run(
-            ["pkg-config", "--variable=gdk_pixbuf_moduledir",
+        result = subprocess.run(  # nosec B603
+            [pkg_config, "--variable=gdk_pixbuf_moduledir",
              "gdk-pixbuf-2.0"],
             capture_output=True,
             text=True,
@@ -80,9 +81,14 @@ def check_dependencies():
         print("✓ PyInstaller is installed")
         return
 
-    req_file = Path(__file__).parent / "requirements-build.txt"
+    base_dir = Path(__file__).parent.resolve()
+    req_file = base_dir / "requirements-build.txt"
+    req_file_resolved = req_file.resolve()
     if not req_file.is_file():
         print(f"\n❌ requirements-build.txt not found at {req_file}")
+        sys.exit(1)
+    if not req_file_resolved.is_relative_to(base_dir):
+        print("\n❌ requirements-build.txt path escapes project directory")
         sys.exit(1)
 
     print("Installing PyInstaller...")
@@ -90,7 +96,7 @@ def check_dependencies():
         # nosec B603 - req_file is validated as a local file
         subprocess.run(
             [sys.executable, "-m", "pip", "install", "-r",
-             str(req_file.resolve())],
+             str(req_file_resolved)],
             check=True,
             shell=False,
         )
@@ -152,6 +158,34 @@ def get_data_files():
     return data_files
 
 
+def validate_pyinstaller_cmd(cmd):
+    """Validate the PyInstaller command list before execution.
+
+    Args:
+        cmd: List of command arguments to validate.
+
+    Raises:
+        ValueError: When the command list is malformed or unsafe.
+    """
+    if not isinstance(cmd, list) or not cmd:
+        raise ValueError("PyInstaller command must be a non-empty list")
+    if cmd[:3] != [sys.executable, "-m", "PyInstaller"]:
+        raise ValueError("PyInstaller command is not trusted")
+    for arg in cmd:
+        if not isinstance(arg, str) or not arg:
+            raise ValueError("PyInstaller command args must be strings")
+        if "\x00" in arg:
+            raise ValueError("PyInstaller command contains null bytes")
+
+    for idx, arg in enumerate(cmd):
+        if arg in {"--add-data", "--add-binary"}:
+            if idx + 1 >= len(cmd):
+                raise ValueError("Missing value for PyInstaller data flag")
+            value = cmd[idx + 1]
+            if os.pathsep not in value:
+                raise ValueError("Invalid PyInstaller data flag value")
+
+
 def build_binary():
     """Build the standalone binary using PyInstaller.
 
@@ -210,8 +244,13 @@ def build_binary():
 
     # Run PyInstaller with timeout
     try:
-        result = subprocess.run(cmd, check=False, timeout=3600,
-                                shell=False)
+        validate_pyinstaller_cmd(cmd)
+        result = subprocess.run(  # nosec B603
+            cmd,
+            check=False,
+            timeout=3600,
+            shell=False,
+        )
     except subprocess.TimeoutExpired:
         print("\n❌ Build failed: PyInstaller timed out after 3600 seconds")
         return 1

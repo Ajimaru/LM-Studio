@@ -7,10 +7,12 @@ This document describes how to build a standalone binary of LM Studio Tray Manag
 The binary build process creates a single executable file that bundles:
 
 - Python interpreter
-- All Python dependencies (PyGObject, etc.)
-- GTK3 GObject Introspection bindings
+- All Python application code and Python dependencies (PyGObject, etc.)
 - Application assets (icons, VERSION file, etc.)
 
+Note: GTK3 and GObject Introspection (GI) shared libraries and typelibs are
+not bundled into the executable. They must be installed and available on
+the target system at runtime.
 ## Quick Start
 
 ### Automated Build (Recommended)

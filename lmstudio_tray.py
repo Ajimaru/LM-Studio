@@ -1518,7 +1518,7 @@ class TrayIcon:
 
         # Load and set the application logo
         logo_path = get_asset_path("img", "lm-studio-tray-manager.svg")
-        if logo_path:
+        if logo_path and GdkPixbuf is not None:
             try:
                 logo = GdkPixbuf.Pixbuf.new_from_file_at_scale(
                     logo_path, 128, 128, True

@@ -689,7 +689,15 @@ if [ "$GUI_FLAG" -eq 1 ]; then
 else
     TRAY_ARGS+=("--auto-start-daemon")
 fi
-TRAY_ARGS+=("$TRAY_MODEL" "$SCRIPT_DIR")
+TRAY_ARGS=("$TRAY_MODEL" "$SCRIPT_DIR")
+if [ "$DEBUG_FLAG" = "1" ]; then
+    TRAY_ARGS+=("--debug")
+fi
+if [ "$GUI_FLAG" -eq 1 ]; then
+    TRAY_ARGS+=("--gui")
+else
+    TRAY_ARGS+=("--auto-start-daemon")
+fi
 
 if [ -n "$TRAY_BIN" ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') 🧩 Tray launch mode: binary"

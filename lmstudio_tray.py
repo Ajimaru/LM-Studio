@@ -44,6 +44,11 @@ try:
 except ImportError:
     gi = None
 
+# ... inside main(), before gi.require_version calls:
+# if gi is None:
+#     print("Error: PyGObject (gi) is not installed.", file=sys.stderr)
+#     sys.exit(1)
+
 DEFAULT_APP_VERSION = "dev"
 
 

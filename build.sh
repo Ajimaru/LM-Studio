@@ -96,7 +96,7 @@ fi
 # Run PyInstaller build
 echo
 echo "Running PyInstaller build..."
-"$PYTHON_BIN" build_binary.py
+"$VENV_DIR/bin/python" build_binary.py
 
 # Check if binary was created
 BINARY_PATH="dist/lmstudio-tray-manager"

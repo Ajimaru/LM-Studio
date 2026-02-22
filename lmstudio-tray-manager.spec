@@ -84,11 +84,10 @@ a = Analysis(
         'gi.repository.Pango',
         'gi.repository.PangoCairo',
         'pkg_resources.py2_warn',
-    ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
     excludes=[],
+    runtime_hooks=[os.path.join(project_root, "pyi_rth_gdk_pixbuf.py")],
     optimize=0,
 )
 pyz = PYZ(a.pure)

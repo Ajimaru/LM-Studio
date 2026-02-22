@@ -210,12 +210,15 @@ def build_binary():
     loaders_dir, cache_file = get_gdk_pixbuf_loaders()
 
     # Build PyInstaller command
+    spec_dir = Path(".build-cache/spec")
+    spec_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--name=lmstudio-tray-manager",
         "--windowed",  # No console window
         "--clean",
+        "--specpath", str(spec_dir),
     ]
 
     # Add hidden imports

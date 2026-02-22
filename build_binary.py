@@ -10,6 +10,7 @@ import glob
 import importlib.util
 import os
 import shlex
+import shutil
 import sys
 import subprocess
 from pathlib import Path
@@ -25,19 +26,28 @@ def get_gdk_pixbuf_loaders():
             Both elements are None if the loaders cannot be found or an
             error occurs.
     """
+    # Validate pkg-config exists
+    if not shutil.which("pkg-config"):
+        print("⚠ pkg-config not found")
+        return None, None
+
     try:
         # Get loaders directory from pkg-config
+        # nosec B603 - pkg-config path validated via shutil.which
         result = subprocess.run(
             ["pkg-config", "--variable=gdk_pixbuf_moduledir",
              "gdk-pixbuf-2.0"],
             capture_output=True,
             text=True,
             check=False,
-            timeout=5
+            timeout=5,
+            shell=False,
         )
         if result.returncode == 0:
             loaders_dir = result.stdout.strip()
-            if os.path.exists(loaders_dir):
+            # Validate path is absolute and exists
+            if loaders_dir and os.path.isabs(loaders_dir) and \
+                    os.path.isdir(loaders_dir):
                 print(f"✓ Found GdkPixbuf loaders: {loaders_dir}")
 
                 # Find loaders.cache
@@ -45,7 +55,7 @@ def get_gdk_pixbuf_loaders():
                     os.path.dirname(loaders_dir),
                     "loaders.cache"
                 )
-                if os.path.exists(cache_file):
+                if os.path.isfile(cache_file):
                     print(f"✓ Found loaders.cache: {cache_file}")
                     return loaders_dir, cache_file
 
@@ -71,15 +81,18 @@ def check_dependencies():
         return
 
     req_file = Path(__file__).parent / "requirements-build.txt"
-    if not req_file.exists():
+    if not req_file.is_file():
         print(f"\n❌ requirements-build.txt not found at {req_file}")
         sys.exit(1)
 
     print("Installing PyInstaller...")
     try:
+        # nosec B603 - req_file is validated as a local file
         subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-r", str(req_file)],
-            check=True
+            [sys.executable, "-m", "pip", "install", "-r",
+             str(req_file.resolve())],
+            check=True,
+            shell=False,
         )
     except subprocess.CalledProcessError as e:
         print(f"\n❌ Failed to install PyInstaller: {e}")
@@ -197,7 +210,8 @@ def build_binary():
 
     # Run PyInstaller with timeout
     try:
-        result = subprocess.run(cmd, check=False, timeout=3600)
+        result = subprocess.run(cmd, check=False, timeout=3600,
+                                shell=False)
     except subprocess.TimeoutExpired:
         print("\n❌ Build failed: PyInstaller timed out after 3600 seconds")
         return 1

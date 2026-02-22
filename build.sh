@@ -74,6 +74,21 @@ else
     VENV_DIR="venv"
     echo -e "${YELLOW}Creating virtual environment...${NC}"
     "$PYTHON_BIN" -m venv --system-site-packages "$VENV_DIR"
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Error: Failed to create virtual environment${NC}"
+        exit 1
+    fi
+fi
+
+# Verify activation script exists
+if [ ! -f "$VENV_DIR/bin/activate" ]; then
+    echo -e "${RED}Error: Virtual environment activation script not found at $VENV_DIR/bin/activate${NC}"
+    echo -e "${YELLOW}Trying to create virtual environment...${NC}"
+    "$PYTHON_BIN" -m venv --system-site-packages "$VENV_DIR"
+    if [ $? -ne 0 ] || [ ! -f "$VENV_DIR/bin/activate" ]; then
+        echo -e "${RED}Error: Could not create or activate virtual environment${NC}"
+        exit 1
+    fi
 fi
 
 echo -e "${GREEN}✓${NC} Activating virtual environment..."
